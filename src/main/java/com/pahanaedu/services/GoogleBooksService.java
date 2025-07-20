@@ -121,7 +121,7 @@ public class GoogleBooksService {
 
             // Title
             JsonNode titleNode = volumeInfo.get("title");
-            if (titleNode != null) {
+            if (titleNode != null && !titleNode.isNull()) {
                 book.setTitle(titleNode.asText());
             }
 
@@ -140,47 +140,61 @@ public class GoogleBooksService {
 
             // Publisher
             JsonNode publisherNode = volumeInfo.get("publisher");
-            if (publisherNode != null) {
+            if (publisherNode != null && !publisherNode.isNull()) {
                 book.setPublisher(publisherNode.asText());
             }
 
             // Description
             JsonNode descriptionNode = volumeInfo.get("description");
-            if (descriptionNode != null) {
+            if (descriptionNode != null && !descriptionNode.isNull()) {
                 String description = descriptionNode.asText();
-                // Limit description length for database
-                if (description.length() > 1000) {
+                if (description != null && description.length() > 1000) {
                     description = description.substring(0, 997) + "...";
                 }
                 book.setDescription(description);
+            }
+
+            // Image URL - Extract from imageLinks
+            JsonNode imageLinksNode = volumeInfo.get("imageLinks");
+            if (imageLinksNode != null && !imageLinksNode.isNull()) {
+                JsonNode thumbnailNode = imageLinksNode.get("thumbnail");
+                if (thumbnailNode != null && !thumbnailNode.isNull()) {
+                    String imageUrl = thumbnailNode.asText();
+                    // Convert HTTP to HTTPS for security
+                    if (imageUrl != null && imageUrl.startsWith("http:")) {
+                        imageUrl = imageUrl.replace("http:", "https:");
+                    }
+                    book.setImageUrl(imageUrl);
+                }
             }
 
             // ISBN
             JsonNode industryIdentifiersNode = volumeInfo.get("industryIdentifiers");
             if (industryIdentifiersNode != null && industryIdentifiersNode.isArray()) {
                 for (JsonNode identifierNode : industryIdentifiersNode) {
-                    String type = identifierNode.get("type").asText();
-                    if ("ISBN_13".equals(type) || "ISBN_10".equals(type)) {
-                        book.setIsbn(identifierNode.get("identifier").asText());
-                        break;
+                    JsonNode typeNode = identifierNode.get("type");
+                    JsonNode identifierValueNode = identifierNode.get("identifier");
+                    if (typeNode != null && identifierValueNode != null) {
+                        String type = typeNode.asText();
+                        if ("ISBN_13".equals(type) || "ISBN_10".equals(type)) {
+                            book.setIsbn(identifierValueNode.asText());
+                            break;
+                        }
                     }
                 }
             }
 
-            // Set default values for required fields
+            // Validation
             if (book.getTitle() == null || book.getTitle().trim().isEmpty()) {
-                return null; // Skip books without title
+                return null;
             }
 
-            if (book.getAuthor() == null) {
+            if (book.getAuthor() == null || book.getAuthor().trim().isEmpty()) {
                 book.setAuthor("Unknown Author");
             }
 
-            if (book.getPrice() == null) {
-                book.setPrice(BigDecimal.ZERO); // Will be set manually
-            }
-
-            // Default inventory values
+            // Set default values
+            book.setPrice(BigDecimal.ZERO);
             book.setQuantity(0);
             book.setMinStockLevel(5);
             book.setActive(true);
@@ -189,6 +203,7 @@ public class GoogleBooksService {
 
         } catch (Exception e) {
             System.err.println("Error parsing book from JSON: " + e.getMessage());
+            e.printStackTrace();
             return null;
         }
     }
