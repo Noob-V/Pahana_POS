@@ -144,7 +144,7 @@ public class BookDAOImpl implements BookDAO {
 
     @Override
     public Book save(Book book) {
-        String sql = "INSERT INTO books (isbn, title, author, publisher, description, price, quantity, min_stock_level, category_id, google_book_id, is_active) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        String sql = "INSERT INTO books (isbn, title, author, publisher, description, price, quantity, min_stock_level, category_id, google_book_id, image_url, is_active) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
         try (Connection conn = dbConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -165,7 +165,8 @@ public class BookDAOImpl implements BookDAO {
             }
 
             stmt.setString(10, book.getGoogleBookId());
-            stmt.setBoolean(11, book.isActive());
+            stmt.setString(11, book.getImageUrl());  // Add this line
+            stmt.setBoolean(12, book.isActive());   // Update index from 11 to 12
 
             int affectedRows = stmt.executeUpdate();
             if (affectedRows == 0) {
@@ -180,7 +181,7 @@ public class BookDAOImpl implements BookDAO {
 
     @Override
     public Book update(Book book) {
-        String sql = "UPDATE books SET title = ?, author = ?, publisher = ?, description = ?, price = ?, quantity = ?, min_stock_level = ?, category_id = ?, is_active = ? WHERE isbn = ?";
+        String sql = "UPDATE books SET title = ?, author = ?, publisher = ?, description = ?, price = ?, quantity = ?, min_stock_level = ?, category_id = ?, image_url = ?, is_active = ? WHERE isbn = ?";
 
         try (Connection conn = dbConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -199,8 +200,9 @@ public class BookDAOImpl implements BookDAO {
                 stmt.setNull(8, Types.INTEGER);
             }
 
-            stmt.setBoolean(9, book.isActive());
-            stmt.setString(10, book.getIsbn());
+            stmt.setString(9, book.getImageUrl());   // Add this line
+            stmt.setBoolean(10, book.isActive());    // Update index from 9 to 10
+            stmt.setString(11, book.getIsbn());      // Update index from 10 to 11
 
             int affectedRows = stmt.executeUpdate();
             if (affectedRows == 0) {
@@ -254,6 +256,7 @@ public class BookDAOImpl implements BookDAO {
         book.setMinStockLevel(rs.getInt("min_stock_level"));
         book.setCategoryId((Integer) rs.getObject("category_id"));
         book.setGoogleBookId(rs.getString("google_book_id"));
+        book.setImageUrl(rs.getString("image_url"));  // Add this line
         book.setActive(rs.getBoolean("is_active"));
         book.setCategoryName(rs.getString("category_name"));
 

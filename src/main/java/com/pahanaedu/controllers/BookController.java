@@ -7,6 +7,7 @@ import com.pahanaedu.services.BookService;
 import com.pahanaedu.services.CategoryService;
 import com.pahanaedu.services.impl.BookServiceImpl;
 import com.pahanaedu.services.impl.CategoryServiceImpl;
+import java.util.stream.Collectors;
 
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
@@ -20,7 +21,7 @@ import java.util.Optional;
 
 @WebServlet(name = "BookController", urlPatterns = {
         "/books", "/books/add", "/books/edit", "/books/delete",
-        "/books/search", "/books/import", "/books/google-search"
+        "/books/search", "/books/import", "/books/google-search", "/books/suggestions"
 })
 public class BookController extends HttpServlet {
     private BookService bookService;
@@ -53,6 +54,9 @@ public class BookController extends HttpServlet {
                 break;
             case "/books/google-search":
                 searchGoogleBooks(request, response);
+                break;
+            case "/books/suggestions":
+                getSuggestions(request, response);
                 break;
             case "/books":
             default:
@@ -197,7 +201,11 @@ public class BookController extends HttpServlet {
             // Call Google Books API service
             List<Book> googleBooks = bookService.searchGoogleBooks(query, Integer.parseInt(maxResults));
 
+            // Add categories for import form
+            List<Category> categories = categoryService.findActive();
+
             request.setAttribute("googleBooks", googleBooks);
+            request.setAttribute("categories", categories);  // Add this line
             request.setAttribute("searchQuery", query);
             request.getRequestDispatcher("/WEB-INF/views/books/google-search.jsp").forward(request, response);
         } catch (Exception e) {
@@ -250,6 +258,45 @@ public class BookController extends HttpServlet {
         }
     }
 
+    private void getSuggestions(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+        response.setContentType("application/json");
+        response.setCharacterEncoding("UTF-8");
+
+        try {
+            String query = request.getParameter("q");
+            List<Book> suggestions = bookService.searchBooks(query);
+
+            // Limit to 5 suggestions
+            List<Book> limitedSuggestions = suggestions.stream()
+                    .limit(5)
+                    .collect(Collectors.toList());
+
+            StringBuilder json = new StringBuilder();
+            json.append("[");
+
+            for (int i = 0; i < limitedSuggestions.size(); i++) {
+                Book book = limitedSuggestions.get(i);
+                if (i > 0) json.append(",");
+                json.append("{")
+                        .append("\"title\":\"").append(escapeJson(book.getTitle())).append("\",")
+                        .append("\"author\":\"").append(escapeJson(book.getAuthor())).append("\"")
+                        .append("}");
+            }
+
+            json.append("]");
+
+            response.getWriter().write(json.toString());
+        } catch (Exception e) {
+            response.getWriter().write("[]");
+        }
+    }
+
+    private String escapeJson(String str) {
+        if (str == null) return "";
+        return str.replace("\"", "\\\"").replace("\n", "\\n").replace("\r", "\\r");
+    }
+
     private Book createBookFromRequest(HttpServletRequest request) {
         Book book = new Book();
         book.setIsbn(request.getParameter("isbn"));
@@ -264,6 +311,12 @@ public class BookController extends HttpServlet {
             book.setPrice(new BigDecimal(priceStr));
         } else {
             book.setPrice(BigDecimal.ZERO);
+        }
+
+        // Handle image URL
+        String imageUrl = request.getParameter("imageUrl");
+        if (imageUrl != null && !imageUrl.trim().isEmpty()) {
+            book.setImageUrl(imageUrl.trim());
         }
 
         // Handle quantity parameter
