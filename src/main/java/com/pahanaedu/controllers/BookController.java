@@ -21,8 +21,10 @@ import java.util.Optional;
 
 @WebServlet(name = "BookController", urlPatterns = {
         "/books", "/books/add", "/books/edit", "/books/delete",
-        "/books/search", "/books/import", "/books/google-search", "/books/suggestions"
+        "/books/search", "/books/filter", "/books/import",
+        "/books/google-search", "/books/suggestions"
 })
+
 public class BookController extends HttpServlet {
     private BookService bookService;
     private CategoryService categoryService;
@@ -51,6 +53,9 @@ public class BookController extends HttpServlet {
                 break;
             case "/books/search":
                 searchBooks(request, response);
+                break;
+            case "/books/filter":
+                filterBooks(request, response);
                 break;
             case "/books/google-search":
                 searchGoogleBooks(request, response);
@@ -91,9 +96,11 @@ public class BookController extends HttpServlet {
         try {
             List<Book> books = bookService.findAll();
             List<Book> lowStockBooks = bookService.findLowStockBooks();
+            List<Category> categories = categoryService.findActive();
 
             request.setAttribute("books", books);
             request.setAttribute("lowStockBooks", lowStockBooks);
+            request.setAttribute("categories", categories);
             request.getRequestDispatcher("/WEB-INF/views/books/list.jsp").forward(request, response);
         } catch (Exception e) {
             request.setAttribute("errorMessage", "Error loading books: " + e.getMessage());
@@ -185,6 +192,34 @@ public class BookController extends HttpServlet {
         } catch (Exception e) {
             request.setAttribute("errorMessage", "Error searching books: " + e.getMessage());
             listBooks(request, response);
+        }
+    }
+
+    // Add this method to BookController
+    private void filterBooks(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+        try {
+            String categoryIdStr = request.getParameter("categoryId");
+            List<Book> books;
+            List<Category> categories = categoryService.findActive();
+
+            if (categoryIdStr != null && !categoryIdStr.trim().isEmpty()) {
+                Integer categoryId = Integer.parseInt(categoryIdStr);
+                books = bookService.findByCategoryId(categoryId);
+                request.setAttribute("selectedCategoryId", categoryId);
+            } else {
+                books = bookService.findAll();
+            }
+
+            List<Book> lowStockBooks = bookService.findLowStockBooks();
+
+            request.setAttribute("books", books);
+            request.setAttribute("lowStockBooks", lowStockBooks);
+            request.setAttribute("categories", categories);
+            request.getRequestDispatcher("/WEB-INF/views/books/list.jsp").forward(request, response);
+        } catch (Exception e) {
+            request.setAttribute("errorMessage", "Error filtering books: " + e.getMessage());
+            request.getRequestDispatcher("/WEB-INF/views/error.jsp").forward(request, response);
         }
     }
 

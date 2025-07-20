@@ -21,6 +21,13 @@ public class DashboardController extends HttpServlet {
             return;
         }
 
+        // Check user role and redirect accordingly
+        String userRole = (String) session.getAttribute("userRole");
+        if ("STAFF".equals(userRole)) {
+            response.sendRedirect(request.getContextPath() + "/staff/dashboard");
+            return;
+        }
+
         request.getRequestDispatcher("/WEB-INF/views/dashboard.jsp").forward(request, response);
     }
 }

@@ -22,6 +22,11 @@ public class BookServiceImpl implements BookService {
     }
 
     @Override
+    public List<Book> findByCategoryId(Integer categoryId) {
+        return bookDAO.findByCategoryId(categoryId);
+    }
+
+    @Override
     public Optional<Book> findByIsbn(String isbn) {
         return bookDAO.findByIsbn(isbn);
     }
