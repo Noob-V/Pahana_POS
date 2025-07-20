@@ -37,13 +37,20 @@ public class RegisterController extends HttpServlet {
         String email = request.getParameter("email");
         String password = request.getParameter("password");
         String confirmPassword = request.getParameter("confirmPassword");
+        String role = request.getParameter("role");
+
+        System.out.println("=== REGISTRATION DEBUG ===");
+        System.out.println("Received role parameter: '" + role + "'");
+        System.out.println("Role is null: " + (role == null));
+        System.out.println("Role is empty: " + (role != null && role.trim().isEmpty()));
 
         // Validate input
         if (fullName == null || fullName.trim().isEmpty() ||
                 username == null || username.trim().isEmpty() ||
                 email == null || email.trim().isEmpty() ||
                 password == null || password.trim().isEmpty() ||
-                confirmPassword == null || confirmPassword.trim().isEmpty()) {
+                confirmPassword == null || confirmPassword.trim().isEmpty() ||
+                role == null || role.trim().isEmpty()) {
 
             request.setAttribute("errorMessage", "All fields are required");
             request.getRequestDispatcher("/WEB-INF/views/register.jsp").forward(request, response);
@@ -64,6 +71,16 @@ public class RegisterController extends HttpServlet {
             return;
         }
 
+        // Validate role
+        if (!role.equals("ADMIN") && !role.equals("STAFF")) {
+            System.out.println("Role validation FAILED for: '" + role + "'");
+            request.setAttribute("errorMessage", "Invalid role selected");
+            request.getRequestDispatcher("/WEB-INF/views/register.jsp").forward(request, response);
+            return;
+        }
+
+        System.out.println("Role validation PASSED for: '" + role + "'");
+
         try {
             // Check if username already exists
             Optional<User> existingUser = userService.findByUsername(username);
@@ -79,12 +96,18 @@ public class RegisterController extends HttpServlet {
             newUser.setUsername(username.trim().toLowerCase());
             newUser.setEmail(email.trim().toLowerCase());
             newUser.setPasswordHash(password); // UserService will hash this
-            newUser.setRole("USER"); // Default role
+            newUser.setRole(role);
             newUser.setActive(true);
             newUser.setCreatedDate(LocalDateTime.now());
 
+            System.out.println("User object role before save: '" + newUser.getRole() + "'");
+
             // Save user to database
             User savedUser = userService.save(newUser);
+
+            System.out.println("User saved with ID: " + (savedUser != null ? savedUser.getId() : "null"));
+            System.out.println("Saved user role: '" + (savedUser != null ? savedUser.getRole() : "null") + "'");
+            System.out.println("=== END DEBUG ===");
 
             if (savedUser != null && savedUser.getId() != null) {
                 response.sendRedirect(request.getContextPath() + "/login?message=registration-success");

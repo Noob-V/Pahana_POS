@@ -78,6 +78,23 @@
                         </div>
 
                         <div class="mb-3">
+                            <label for="role" class="form-label">
+                                <i class="fas fa-user-tag"></i> Role
+                            </label>
+                            <select class="form-select" id="role" name="role" required>
+                                <option value="">Select Role</option>
+                                <option value="STAFF" ${param.role == 'STAFF' ? 'selected' : ''}>Staff Member</option>
+                                <!-- Only show ADMIN option if current user is admin or during initial setup -->
+                                <c:if test="${empty sessionScope.user or sessionScope.userRole == 'ADMIN'}">
+                                    <option value="ADMIN" ${param.role == 'ADMIN' ? 'selected' : ''}>Administrator</option>
+                                </c:if>
+                            </select>
+                            <small class="form-text text-muted">
+                                Choose the appropriate role for this account
+                            </small>
+                        </div>
+
+                        <div class="mb-3">
                             <label for="password" class="form-label">
                                 <i class="fas fa-lock"></i> Password
                             </label>
