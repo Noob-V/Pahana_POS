@@ -34,6 +34,11 @@ public class Bill {
         this.createdDate = LocalDateTime.now();
     }
 
+    public java.util.Date getBillDateAsDate() {
+        return billDate != null ?
+                java.util.Date.from(billDate.atZone(java.time.ZoneId.systemDefault()).toInstant()) : null;
+    }
+
     // Getters and Setters
     public String getBillId() { return billId; }
     public void setBillId(String billId) { this.billId = billId; }
