@@ -25,6 +25,13 @@ public class BookServiceImpl implements BookService {
     public List<Book> findByCategoryId(Integer categoryId) {
         return bookDAO.findByCategoryId(categoryId);
     }
+    public List<Book> getLowStockBooks(int limit) {
+        List<Book> lowStockBooks = findLowStockBooks();
+        if (lowStockBooks.size() > limit) {
+            return lowStockBooks.subList(0, limit);
+        }
+        return lowStockBooks;
+    }
 
     @Override
     public Optional<Book> findByIsbn(String isbn) {

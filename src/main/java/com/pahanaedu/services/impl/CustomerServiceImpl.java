@@ -1,8 +1,8 @@
-// src/main/java/com/pahanaedu/services/impl/CustomerServiceImpl.java
 package com.pahanaedu.services.impl;
 
 import com.pahanaedu.dao.CustomerDAO;
 import com.pahanaedu.dao.impl.CustomerDAOImpl;
+import com.pahanaedu.entities.Bill;
 import com.pahanaedu.entities.Customer;
 import com.pahanaedu.services.CustomerService;
 
@@ -28,18 +28,21 @@ public class CustomerServiceImpl implements CustomerService {
 
     @Override
     public List<Customer> searchByName(String name) {
-        return customerDAO.findByName(name);
+        return customerDAO.searchByName(name);
+    }
+
+    @Override
+    public List<Customer> findByEmail(String email) {
+        return customerDAO.findByEmail(email);
     }
 
     @Override
     public Customer save(Customer customer) {
-        validateCustomer(customer);
         return customerDAO.save(customer);
     }
 
     @Override
     public Customer update(Customer customer) {
-        validateCustomer(customer);
         return customerDAO.update(customer);
     }
 
@@ -48,12 +51,13 @@ public class CustomerServiceImpl implements CustomerService {
         return customerDAO.deleteByAccountNumber(accountNumber);
     }
 
-    private void validateCustomer(Customer customer) {
-        if (customer.getName() == null || customer.getName().trim().isEmpty()) {
-            throw new IllegalArgumentException("Customer name is required");
-        }
-        if (customer.getEmail() != null && !customer.getEmail().isEmpty() && !customer.getEmail().contains("@")) {
-            throw new IllegalArgumentException("Valid email address is required");
-        }
+    @Override
+    public List<Bill> findBillsByCustomer(String accountNumber) {
+        return customerDAO.findBillsByCustomerAccountNumber(accountNumber);
+    }
+
+    @Override
+    public List<Bill> findRecentBillsByCustomer(String accountNumber, int limit) {
+        return customerDAO.findRecentBillsByCustomer(accountNumber, limit);
     }
 }

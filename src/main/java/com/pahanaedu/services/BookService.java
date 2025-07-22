@@ -11,6 +11,7 @@ public interface BookService {
     List<Book> searchBooks(String query);
     List<Book> findLowStockBooks();
     List<Book> findByCategoryId(Integer categoryId);
+    List<Book> getLowStockBooks(int limit);
     Book save(Book book);
     Book update(Book book);
     boolean deleteByIsbn(String isbn);

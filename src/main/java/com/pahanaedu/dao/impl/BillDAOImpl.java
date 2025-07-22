@@ -370,4 +370,31 @@ public class BillDAOImpl implements BillDAO {
 
         return billItem;
     }
+
+    @Override
+    public List<Bill> findByDate(LocalDate date) {
+        String sql = "SELECT b.*, c.name as customer_name, u.full_name as user_name " +
+                "FROM bills b " +
+                "LEFT JOIN customers c ON b.customer_account_number = c.account_number " +
+                "LEFT JOIN users u ON b.user_id = u.id " +
+                "WHERE CAST(b.bill_date AS DATE) = ? " +
+                "ORDER BY b.bill_date DESC";
+        List<Bill> bills = new ArrayList<>();
+
+        try (Connection conn = dbConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setDate(1, java.sql.Date.valueOf(date));
+
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    bills.add(mapResultSetToBill(rs));
+                }
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException("Error finding bills by date", e);
+        }
+
+        return bills;
+    }
 }

@@ -131,44 +131,54 @@ public class BillingController extends HttpServlet {
     private void addToCart(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         String isbn = request.getParameter("isbn");
-        int quantity = Integer.parseInt(request.getParameter("quantity"));
+        int requestedQuantity = Integer.parseInt(request.getParameter("quantity"));
 
         Optional<Book> bookOpt = bookService.findByIsbn(isbn);
         if (bookOpt.isPresent()) {
             Book book = bookOpt.get();
+
+            // Check if book is active and has any stock
+            if (!book.isActive() || book.getQuantity() <= 0) {
+                response.sendRedirect(request.getContextPath() + "/billing/pos?error=out-of-stock&isbn=" + isbn);
+                return;
+            }
+
             HttpSession session = request.getSession();
             List<CartItem> cart = (List<CartItem>) session.getAttribute("cart");
-
             if (cart == null) {
                 cart = new ArrayList<>();
             }
 
-            // Check current cart quantity for this item
+            // Check current quantity in cart for this book
             int currentCartQuantity = cart.stream()
                     .filter(item -> item.getIsbn().equals(isbn))
                     .mapToInt(CartItem::getQuantity)
                     .sum();
 
-            // Validate total quantity (cart + new quantity) against available stock
-            int totalRequestedQuantity = currentCartQuantity + quantity;
+            // Calculate total requested quantity (current in cart + new request)
+            int totalRequestedQuantity = currentCartQuantity + requestedQuantity;
 
+            // CRITICAL CHECK: Validate against actual inventory
             if (totalRequestedQuantity > book.getQuantity()) {
-                // Redirect with error message
-                response.sendRedirect(request.getContextPath() + "/billing/pos?error=insufficient-stock&isbn=" + isbn + "&available=" + book.getQuantity() + "&requested=" + totalRequestedQuantity);
+                String errorMsg = String.format("Cannot add %d items. Only %d available in stock (you already have %d in cart)",
+                        requestedQuantity, book.getQuantity(), currentCartQuantity);
+                response.sendRedirect(request.getContextPath() + "/billing/pos?error=insufficient-stock&message=" +
+                        java.net.URLEncoder.encode(errorMsg, "UTF-8"));
                 return;
             }
 
-            // Check if item already exists in cart
+            // Find existing item in cart or create new one
             Optional<CartItem> existingItem = cart.stream()
                     .filter(item -> item.getIsbn().equals(isbn))
                     .findFirst();
 
             if (existingItem.isPresent()) {
-                CartItem item = existingItem.get();
-                item.setQuantity(item.getQuantity() + quantity);
+                // Update existing item quantity
+                existingItem.get().setQuantity(totalRequestedQuantity);
             } else {
+                // Add new item to cart
                 CartItem newItem = new CartItem(isbn, book.getTitle(), book.getAuthor(),
-                        book.getPrice(), quantity);
+                        book.getPrice(), requestedQuantity);
                 cart.add(newItem);
             }
 
@@ -196,32 +206,42 @@ public class BillingController extends HttpServlet {
     private void updateCartQuantity(HttpServletRequest request, HttpServletResponse response)
             throws IOException {
         String isbn = request.getParameter("isbn");
-        int quantity = Integer.parseInt(request.getParameter("quantity"));
+        int newQuantity = Integer.parseInt(request.getParameter("quantity"));
 
         HttpSession session = request.getSession();
         List<CartItem> cart = (List<CartItem>) session.getAttribute("cart");
 
         if (cart != null) {
-            Optional<CartItem> itemOpt = cart.stream()
-                    .filter(item -> item.getIsbn().equals(isbn))
-                    .findFirst();
-
-            if (itemOpt.isPresent()) {
-                if (quantity > 0) {
-                    // Validate against available stock
-                    Optional<Book> bookOpt = bookService.findByIsbn(isbn);
-                    if (bookOpt.isPresent()) {
-                        Book book = bookOpt.get();
-                        if (quantity > book.getQuantity()) {
-                            response.sendRedirect(request.getContextPath() + "/billing/pos?error=insufficient-stock&isbn=" + isbn + "&available=" + book.getQuantity() + "&requested=" + quantity);
-                            return;
-                        }
-                    }
-                    itemOpt.get().setQuantity(quantity);
-                } else {
-                    cart.removeIf(item -> item.getIsbn().equals(isbn));
-                }
+            if (newQuantity <= 0) {
+                // Remove item if quantity is 0 or negative
+                cart.removeIf(item -> item.getIsbn().equals(isbn));
                 session.setAttribute("cart", cart);
+                response.sendRedirect(request.getContextPath() + "/billing/pos");
+                return;
+            }
+
+            // Validate against inventory before updating
+            Optional<Book> bookOpt = bookService.findByIsbn(isbn);
+            if (bookOpt.isPresent()) {
+                Book book = bookOpt.get();
+
+                if (newQuantity > book.getQuantity()) {
+                    String errorMsg = String.format("Cannot set quantity to %d. Only %d available in stock",
+                            newQuantity, book.getQuantity());
+                    response.sendRedirect(request.getContextPath() + "/billing/pos?error=insufficient-stock&message=" +
+                            java.net.URLEncoder.encode(errorMsg, "UTF-8"));
+                    return;
+                }
+
+                // Update the cart item quantity
+                Optional<CartItem> itemOpt = cart.stream()
+                        .filter(item -> item.getIsbn().equals(isbn))
+                        .findFirst();
+
+                if (itemOpt.isPresent()) {
+                    itemOpt.get().setQuantity(newQuantity);
+                    session.setAttribute("cart", cart);
+                }
             }
         }
 

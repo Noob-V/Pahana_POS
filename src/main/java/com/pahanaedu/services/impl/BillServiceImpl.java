@@ -1,4 +1,3 @@
-// src/main/java/com/pahanaedu/services/impl/BillServiceImpl.java
 package com.pahanaedu.services.impl;
 
 import com.pahanaedu.dao.BillDAO;
@@ -8,8 +7,12 @@ import com.pahanaedu.entities.BillItem;
 import com.pahanaedu.entities.CartItem;
 import com.pahanaedu.services.BillService;
 
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.time.LocalDate;
 
 public class BillServiceImpl implements BillService {
     private final BillDAO billDAO;
@@ -19,8 +22,27 @@ public class BillServiceImpl implements BillService {
     }
 
     @Override
-    public Optional<Bill> findById(Integer billId) {
-        return billDAO.findById(billId.toString());
+    public List<Bill> getRecentBills(int limit) {
+        List<Bill> allBills = billDAO.findAll();
+        if (allBills.size() > limit) {
+            return allBills.subList(0, limit);
+        }
+        return allBills;
+    }
+
+    @Override
+    public List<Bill> getBillsByDateRange(LocalDate start, LocalDate end) {
+        return billDAO.findByDateRange(start, end);
+    }
+
+    @Override
+    public List<Bill> getBillsByDate(LocalDate date) {
+        return billDAO.findByDate(date);
+    }
+
+    @Override
+    public Optional<Bill> findById(String billId) {
+        return billDAO.findById(billId);
     }
 
     @Override
@@ -35,26 +57,25 @@ public class BillServiceImpl implements BillService {
 
     @Override
     public Bill saveBillWithItems(Bill bill, List<CartItem> items) {
-        // Save the bill first
-        Bill savedBill = billDAO.save(bill);
-
-        // Convert CartItems to BillItems and save
+        // Convert cart items to bill items
+        List<BillItem> billItems = new ArrayList<>();
         for (CartItem cartItem : items) {
             BillItem billItem = new BillItem();
-            billItem.setBillId(savedBill.getBillId());
             billItem.setIsbn(cartItem.getIsbn());
+            billItem.setBookTitle(cartItem.getTitle());
             billItem.setQuantity(cartItem.getQuantity());
             billItem.setUnitPrice(cartItem.getPrice());
-            billItem.setDiscountAmount(java.math.BigDecimal.ZERO);
-
-            billDAO.saveBillItem(billItem);
+            billItem.setTotalPrice(cartItem.getTotal());
+            billItem.setDiscountAmount(BigDecimal.ZERO);
+            billItems.add(billItem);
         }
 
-        return savedBill;
+        bill.setBillItems(billItems);
+        return billDAO.save(bill);
     }
 
     @Override
-    public boolean deleteById(Integer billId) {
-        return billDAO.deleteById(billId.toString());
+    public boolean deleteById(String billId) {
+        return billDAO.deleteById(billId);
     }
 }

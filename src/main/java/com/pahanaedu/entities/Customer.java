@@ -4,6 +4,8 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.Date;
 
+
+
 public class Customer {
     private String accountNumber;
     private String name;
@@ -44,7 +46,7 @@ public class Customer {
 
     public Date getCreatedDateAsDate() {
         return createdDate != null ?
-                Date.from(createdDate.atZone(ZoneId.systemDefault()).toInstant()) : null;
+                Date.from(createdDate.atZone(java.time.ZoneId.systemDefault()).toInstant()) : null;
     }
 
     public Date getUpdatedDateAsDate() {
