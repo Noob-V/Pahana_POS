@@ -273,7 +273,7 @@ public class BillingController extends HttpServlet {
         // Create bill
         Bill bill = new Bill();
         bill.setCustomerAccountNumber(customerAccountNumber);
-        bill.setUserId(1); // TODO: Get from session
+        bill.setUserId(1);
         bill.setBillDate(LocalDateTime.now());
         bill.setSubtotal(subtotal);
         bill.setTaxAmount(taxAmount);
