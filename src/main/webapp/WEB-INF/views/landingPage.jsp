@@ -8,8 +8,23 @@
   <title>Pahana Education - Premier Online Bookshop</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
+    :root {
+      --primary-color: #ff6b35;
+      --secondary-color: #004d7a;
+      --accent-color: #ffd23f;
+      --success-color: #10b981;
+      --dark-color: #1a1a2e;
+      --light-color: #f8fafc;
+      --gradient-primary: linear-gradient(135deg, #ff6b35 0%, #f7931e 50%, #ffd23f 100%);
+      --gradient-secondary: linear-gradient(135deg, #004d7a 0%, #0066cc 100%);
+      --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+      --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+      --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+      --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1);
+    }
+
     * {
       margin: 0;
       padding: 0;
@@ -17,82 +32,39 @@
     }
 
     body {
-      font-family: 'Poppins', sans-serif;
+      font-family: 'Inter', sans-serif;
+      line-height: 1.6;
+      color: var(--dark-color);
       overflow-x: hidden;
-    }
-
-    /* Animated Background */
-    .hero-section {
-      min-height: 100vh;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      position: relative;
-      overflow: hidden;
-    }
-
-    .floating-shapes {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      overflow: hidden;
-      z-index: 1;
-    }
-
-    .shape {
-      position: absolute;
-      background: rgba(255, 255, 255, 0.1);
-      animation: float 20s infinite linear;
-    }
-
-    .circle {
-      border-radius: 50%;
-    }
-
-    .square {
-      border-radius: 10px;
-    }
-
-    @keyframes float {
-      0% {
-        transform: translateY(100vh) rotate(0deg);
-        opacity: 0;
-      }
-      10% {
-        opacity: 1;
-      }
-      90% {
-        opacity: 1;
-      }
-      100% {
-        transform: translateY(-100px) rotate(360deg);
-        opacity: 0;
-      }
     }
 
     /* Navigation */
     .navbar {
       background: rgba(255, 255, 255, 0.95) !important;
       backdrop-filter: blur(20px);
-      box-shadow: 0 8px 32px rgba(31, 38, 135, 0.37);
+      box-shadow: var(--shadow-lg);
       transition: all 0.3s ease;
-      z-index: 1000;
+      padding: 1rem 0;
     }
 
     .navbar-brand {
       font-weight: 700;
-      font-size: 1.8rem;
-      color: #667eea !important;
+      font-size: 1.5rem;
+      color: var(--primary-color) !important;
+      display: flex;
+      align-items: center;
     }
 
     .nav-link {
       font-weight: 500;
+      color: var(--dark-color) !important;
+      margin: 0 0.5rem;
       transition: all 0.3s ease;
       position: relative;
     }
 
     .nav-link:hover {
-      color: #667eea !important;
+      color: var(--primary-color) !important;
       transform: translateY(-2px);
     }
 
@@ -103,20 +75,29 @@
       height: 2px;
       bottom: -5px;
       left: 50%;
-      background: #667eea;
+      background: var(--primary-color);
       transition: all 0.3s ease;
       transform: translateX(-50%);
     }
 
     .nav-link:hover::after {
-      width: 100%;
+      width: 80%;
     }
 
-    /* Hero Content */
+    /* Hero Section */
+    .hero-section {
+      min-height: 100vh;
+      background: var(--gradient-primary);
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+    }
+
     .hero-content {
       position: relative;
       z-index: 10;
-      padding-top: 120px;
+      padding: 2rem 0;
     }
 
     .hero-title {
@@ -129,46 +110,36 @@
     }
 
     .hero-subtitle {
-      font-size: 1.3rem;
+      font-size: 1.25rem;
       color: rgba(255, 255, 255, 0.9);
       margin-bottom: 2rem;
       animation: fadeInUp 1s ease 0.3s both;
     }
 
-    @keyframes fadeInUp {
-      from {
-        opacity: 0;
-        transform: translateY(50px);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
-    }
-
-    /* Search Box */
     .search-container {
-      position: relative;
       max-width: 600px;
       margin: 0 auto 3rem;
       animation: fadeInUp 1s ease 0.6s both;
+      position: relative;
     }
 
     .search-box {
       border: none;
       border-radius: 50px;
-      padding: 20px 25px;
+      padding: 1rem 1.5rem;
       font-size: 1.1rem;
-      box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+      box-shadow: var(--shadow-xl);
       background: rgba(255, 255, 255, 0.95);
       backdrop-filter: blur(20px);
       transition: all 0.3s ease;
+      width: 100%;
+      padding-right: 120px;
     }
 
     .search-box:focus {
       outline: none;
       box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
-      transform: translateY(-5px);
+      transform: translateY(-2px);
     }
 
     .search-btn {
@@ -176,7 +147,7 @@
       right: 8px;
       top: 8px;
       border: none;
-      background: linear-gradient(135deg, #667eea, #764ba2);
+      background: var(--gradient-primary);
       color: white;
       border-radius: 50px;
       padding: 12px 25px;
@@ -186,20 +157,19 @@
 
     .search-btn:hover {
       transform: translateY(-2px);
-      box-shadow: 0 10px 20px rgba(102, 126, 234, 0.4);
+      box-shadow: var(--shadow-lg);
     }
 
-    /* CTA Buttons */
     .cta-buttons {
       animation: fadeInUp 1s ease 0.9s both;
     }
 
     .btn-custom {
-      padding: 15px 35px;
+      padding: 1rem 2rem;
       font-size: 1.1rem;
       font-weight: 600;
       border-radius: 50px;
-      margin: 0 10px;
+      margin: 0.5rem;
       transition: all 0.3s ease;
       border: none;
       text-decoration: none;
@@ -207,19 +177,19 @@
     }
 
     .btn-primary-custom {
-      background: linear-gradient(135deg, #667eea, #764ba2);
-      color: white;
-      box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
+      background: white;
+      color: var(--primary-color);
+      box-shadow: var(--shadow-lg);
     }
 
     .btn-primary-custom:hover {
-      transform: translateY(-5px);
-      box-shadow: 0 15px 40px rgba(102, 126, 234, 0.6);
-      color: white;
+      transform: translateY(-3px);
+      box-shadow: var(--shadow-xl);
+      color: var(--primary-color);
     }
 
     .btn-outline-custom {
-      background: rgba(255, 255, 255, 0.2);
+      background: rgba(255, 255, 255, 0.1);
       color: white;
       border: 2px solid rgba(255, 255, 255, 0.3);
       backdrop-filter: blur(20px);
@@ -227,14 +197,13 @@
 
     .btn-outline-custom:hover {
       background: white;
-      color: #667eea;
-      transform: translateY(-5px);
-      box-shadow: 0 15px 40px rgba(255, 255, 255, 0.3);
+      color: var(--primary-color);
+      transform: translateY(-3px);
     }
 
     /* Sections */
     .section {
-      padding: 100px 0;
+      padding: 5rem 0;
     }
 
     .section-title {
@@ -242,7 +211,7 @@
       font-weight: 700;
       text-align: center;
       margin-bottom: 3rem;
-      color: #333;
+      color: var(--dark-color);
       position: relative;
     }
 
@@ -251,112 +220,141 @@
       position: absolute;
       width: 80px;
       height: 4px;
-      background: linear-gradient(135deg, #667eea, #764ba2);
+      background: var(--gradient-primary);
       bottom: -10px;
       left: 50%;
       transform: translateX(-50%);
       border-radius: 2px;
     }
 
-    /* Popular Books */
+    /* Book Cards */
     .book-card {
       background: white;
       border-radius: 20px;
-      padding: 20px;
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+      padding: 1.5rem;
+      box-shadow: var(--shadow-md);
       transition: all 0.3s ease;
       height: 100%;
       border: none;
+      overflow: hidden;
     }
 
     .book-card:hover {
       transform: translateY(-10px);
-      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.15);
+      box-shadow: var(--shadow-xl);
     }
 
     .book-image {
       width: 100%;
-      height: 200px;
+      height: 280px;
       object-fit: cover;
       border-radius: 15px;
-      margin-bottom: 15px;
+      margin-bottom: 1rem;
+      transition: transform 0.3s ease;
+    }
+
+    .book-card:hover .book-image {
+      transform: scale(1.05);
     }
 
     .book-title {
       font-size: 1.1rem;
       font-weight: 600;
-      color: #333;
-      margin-bottom: 8px;
+      color: var(--dark-color);
+      margin-bottom: 0.5rem;
       line-height: 1.3;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
     }
 
     .book-author {
-      color: #666;
+      color: #6b7280;
       font-size: 0.9rem;
-      margin-bottom: 10px;
+      margin-bottom: 0.5rem;
     }
 
     .book-rating {
-      color: #ffc107;
-      margin-bottom: 15px;
+      color: var(--accent-color);
+      margin-bottom: 1rem;
+      font-size: 0.9rem;
+    }
+
+    .book-description {
+      font-size: 0.85rem;
+      color: #6b7280;
+      line-height: 1.4;
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      margin-bottom: 1rem;
+    }
+
+    .book-price {
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: var(--success-color);
+      margin-bottom: 1rem;
     }
 
     /* About Section */
     .about-section {
-      background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+      background: var(--light-color);
     }
 
     .feature-card {
       background: white;
-      padding: 40px 30px;
+      padding: 2.5rem 2rem;
       border-radius: 20px;
       text-align: center;
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+      box-shadow: var(--shadow-md);
       transition: all 0.3s ease;
       height: 100%;
     }
 
     .feature-card:hover {
       transform: translateY(-10px);
-      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.15);
+      box-shadow: var(--shadow-xl);
     }
 
     .feature-icon {
-      font-size: 4rem;
-      background: linear-gradient(135deg, #667eea, #764ba2);
+      font-size: 3rem;
+      background: var(--gradient-primary);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       background-clip: text;
-      margin-bottom: 20px;
+      margin-bottom: 1.5rem;
     }
 
     .feature-title {
       font-size: 1.3rem;
       font-weight: 600;
-      margin-bottom: 15px;
-      color: #333;
+      margin-bottom: 1rem;
+      color: var(--dark-color);
     }
 
     .feature-description {
-      color: #666;
+      color: #6b7280;
       line-height: 1.6;
     }
 
     /* Stats Section */
     .stats-section {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      background: var(--gradient-secondary);
       color: white;
     }
 
     .stat-item {
       text-align: center;
-      padding: 20px;
+      padding: 2rem 1rem;
     }
 
     .stat-number {
       font-size: 3rem;
       font-weight: 800;
-      margin-bottom: 10px;
+      margin-bottom: 0.5rem;
       display: block;
     }
 
@@ -365,80 +363,65 @@
       opacity: 0.9;
     }
 
-    /* Footer */
-    .footer {
-      background: #2c3e50;
-      color: white;
-      padding: 60px 0 30px;
-    }
-
-    .footer-section {
-      margin-bottom: 30px;
-    }
-
-    .footer-title {
-      font-size: 1.3rem;
-      font-weight: 600;
-      margin-bottom: 20px;
-      color: #ecf0f1;
-    }
-
-    .footer-link {
-      color: #bdc3c7;
-      text-decoration: none;
-      transition: color 0.3s ease;
-      display: block;
-      margin-bottom: 8px;
-    }
-
-    .footer-link:hover {
-      color: #667eea;
-    }
-
-    .social-links {
-      display: flex;
-      gap: 15px;
-    }
-
-    .social-link {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      width: 45px;
-      height: 45px;
-      background: rgba(255, 255, 255, 0.1);
-      color: white;
-      border-radius: 50%;
-      transition: all 0.3s ease;
-      text-decoration: none;
-    }
-
-    .social-link:hover {
-      background: #667eea;
-      color: white;
-      transform: translateY(-3px);
-    }
-
-    /* Loading Animation */
+    /* Loading */
     .loading {
-      display: none;
-      text-align: center;
-      padding: 50px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+      padding: 3rem;
     }
 
     .spinner {
       width: 50px;
       height: 50px;
-      border: 5px solid #f3f3f3;
-      border-top: 5px solid #667eea;
+      border: 4px solid #f3f3f3;
+      border-top: 4px solid var(--primary-color);
       border-radius: 50%;
       animation: spin 1s linear infinite;
-      margin: 0 auto 20px;
+      margin-bottom: 1rem;
     }
 
     @keyframes spin {
       0% { transform: rotate(0deg); }
       100% { transform: rotate(360deg); }
+    }
+
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(30px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    /* Footer */
+    .footer {
+      background: var(--dark-color);
+      color: white;
+      padding: 4rem 0 2rem;
+    }
+
+    .footer-title {
+      font-size: 1.2rem;
+      font-weight: 600;
+      margin-bottom: 1.5rem;
+      color: white;
+    }
+
+    .footer-link {
+      color: #9ca3af;
+      text-decoration: none;
+      transition: color 0.3s ease;
+      display: block;
+      margin-bottom: 0.5rem;
+    }
+
+    .footer-link:hover {
+      color: var(--primary-color);
     }
 
     /* Responsive */
@@ -452,21 +435,19 @@
       }
 
       .btn-custom {
-        padding: 12px 25px;
+        padding: 0.8rem 1.5rem;
         font-size: 1rem;
-        margin: 5px;
       }
 
-      .search-box {
-        padding: 15px 20px;
-        font-size: 1rem;
+      .book-image {
+        height: 200px;
       }
     }
 
-    /* Scroll Animation */
+    /* Animate on scroll */
     .animate-on-scroll {
       opacity: 0;
-      transform: translateY(50px);
+      transform: translateY(30px);
       transition: all 0.8s ease;
     }
 
@@ -478,10 +459,10 @@
 </head>
 <body>
 <!-- Navigation -->
-<nav class="navbar navbar-expand-lg navbar-light fixed-top">
+<nav class="navbar navbar-expand-lg fixed-top">
   <div class="container">
     <a class="navbar-brand" href="#home">
-      <i class="fas fa-graduation-cap me-2"></i>Pahana Education
+      <i class="fas fa-book-open me-2"></i>Pahana Education
     </a>
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
       <span class="navbar-toggler-icon"></span>
@@ -492,7 +473,7 @@
           <a class="nav-link" href="#home">Home</a>
         </li>
         <li class="nav-item">
-          <a class="nav-link" href="#books">Popular Books</a>
+          <a class="nav-link" href="#books">Books</a>
         </li>
         <li class="nav-item">
           <a class="nav-link" href="#about">About</a>
@@ -500,15 +481,8 @@
         <li class="nav-item">
           <a class="nav-link" href="#contact">Contact</a>
         </li>
-        <li class="nav-item ms-3">
-          <a href="${pageContext.request.contextPath}/login" class="btn btn-outline-primary me-2">
-            <i class="fas fa-sign-in-alt"></i> Login
-          </a>
-        </li>
         <li class="nav-item">
-          <a href="${pageContext.request.contextPath}/register" class="btn btn-primary">
-            <i class="fas fa-user-plus"></i> Register
-          </a>
+          <a class="nav-link btn btn-outline-primary ms-2" href="${pageContext.request.contextPath}/login">Login</a>
         </li>
       </ul>
     </div>
@@ -517,36 +491,24 @@
 
 <!-- Hero Section -->
 <section class="hero-section" id="home">
-  <!-- Animated Background -->
-  <div class="floating-shapes">
-    <!-- Shapes will be generated by JavaScript -->
-  </div>
-
-  <div class="container hero-content">
-    <div class="row align-items-center min-vh-100">
-      <div class="col-lg-12 text-center">
+  <div class="container">
+    <div class="row align-items-center">
+      <div class="col-lg-12 text-center hero-content">
         <h1 class="hero-title">Welcome to Pahana Education</h1>
-        <p class="hero-subtitle">Your Premier Destination for Academic Excellence and Knowledge</p>
+        <p class="hero-subtitle">Discover thousands of books and expand your knowledge with our premium collection</p>
 
-        <!-- Search Box -->
         <div class="search-container">
-          <form id="bookSearchForm" class="position-relative">
-            <input type="text" class="form-control search-box" id="bookSearch"
-                   placeholder="Search for books, authors, subjects..." required>
+          <form id="bookSearchForm">
+            <input type="text" class="search-box" id="bookSearch" placeholder="Search for books, authors, or subjects...">
             <button type="submit" class="search-btn">
-              <i class="fas fa-search me-2"></i>Search
+              <i class="fas fa-search"></i> Search
             </button>
           </form>
         </div>
 
-        <!-- CTA Buttons -->
         <div class="cta-buttons">
-          <a href="#books" class="btn-custom btn-primary-custom">
-            <i class="fas fa-book me-2"></i>Explore Books
-          </a>
-          <a href="#about" class="btn-custom btn-outline-custom">
-            <i class="fas fa-info-circle me-2"></i>Learn More
-          </a>
+          <a href="#books" class="btn-custom btn-primary-custom">Browse Books</a>
+          <a href="#about" class="btn-custom btn-outline-custom">Learn More</a>
         </div>
       </div>
     </div>
@@ -571,7 +533,6 @@
   <div class="container">
     <h2 class="section-title">Search Results</h2>
     <div class="row" id="searchResultsContainer">
-      <!-- Search results will be populated here -->
     </div>
   </div>
 </section>
@@ -579,47 +540,46 @@
 <!-- About Section -->
 <section class="section about-section" id="about">
   <div class="container">
-    <div class="row">
+    <div class="row align-items-center">
       <div class="col-lg-6 animate-on-scroll">
         <h2 class="section-title text-start">About Pahana Education</h2>
-        <p class="lead mb-4">
-          Pahana Education is Sri Lanka's premier online bookshop management system, dedicated to revolutionizing how educational institutions and bookstores manage their inventory and serve their customers.
-        </p>
-        <p class="mb-4">
-          Founded with the vision of making quality educational resources accessible to everyone, we combine cutting-edge technology with a deep understanding of the educational landscape to provide comprehensive solutions for book management, sales, and distribution.
-        </p>
-        <p class="mb-4">
-          Our platform integrates seamlessly with Google Books API to provide access to millions of titles, ensuring that students, educators, and book enthusiasts can find exactly what they're looking for. From academic textbooks to recreational reading, we cover every aspect of the literary world.
-        </p>
+        <p class="lead">Your premier destination for educational books and learning resources.</p>
+        <p>At Pahana Education, we believe in the power of knowledge to transform lives. Our extensive collection includes textbooks, reference materials, fiction, non-fiction, and specialized educational content to support learners at every level.</p>
+        <ul class="list-unstyled">
+          <li><i class="fas fa-check text-success me-2"></i> Over 50,000+ books in our collection</li>
+          <li><i class="fas fa-check text-success me-2"></i> Expert-curated educational content</li>
+          <li><i class="fas fa-check text-success me-2"></i> Fast and reliable delivery</li>
+          <li><i class="fas fa-check text-success me-2"></i> Competitive prices and discounts</li>
+        </ul>
       </div>
       <div class="col-lg-6">
         <div class="row">
           <div class="col-md-6 mb-4">
             <div class="feature-card animate-on-scroll">
-              <i class="fas fa-book-open feature-icon"></i>
+              <i class="fas fa-book feature-icon"></i>
               <h4 class="feature-title">Vast Collection</h4>
-              <p class="feature-description">Access to millions of books through Google Books integration</p>
+              <p class="feature-description">Browse through thousands of carefully selected books across all subjects and genres.</p>
             </div>
           </div>
           <div class="col-md-6 mb-4">
             <div class="feature-card animate-on-scroll">
-              <i class="fas fa-users feature-icon"></i>
-              <h4 class="feature-title">User-Friendly</h4>
-              <p class="feature-description">Intuitive interface designed for all user levels</p>
+              <i class="fas fa-shipping-fast feature-icon"></i>
+              <h4 class="feature-title">Fast Delivery</h4>
+              <p class="feature-description">Quick and reliable shipping to get your books to you as soon as possible.</p>
             </div>
           </div>
           <div class="col-md-6 mb-4">
             <div class="feature-card animate-on-scroll">
-              <i class="fas fa-chart-line feature-icon"></i>
-              <h4 class="feature-title">Analytics</h4>
-              <p class="feature-description">Comprehensive reporting and inventory management</p>
+              <i class="fas fa-star feature-icon"></i>
+              <h4 class="feature-title">Quality Assured</h4>
+              <p class="feature-description">All books are carefully inspected to ensure the highest quality standards.</p>
             </div>
           </div>
           <div class="col-md-6 mb-4">
             <div class="feature-card animate-on-scroll">
-              <i class="fas fa-shield-alt feature-icon"></i>
-              <h4 class="feature-title">Secure</h4>
-              <p class="feature-description">Advanced security measures to protect your data</p>
+              <i class="fas fa-headset feature-icon"></i>
+              <h4 class="feature-title">24/7 Support</h4>
+              <p class="feature-description">Our dedicated customer service team is here to help you anytime.</p>
             </div>
           </div>
         </div>
@@ -633,27 +593,27 @@
   <div class="container">
     <div class="row">
       <div class="col-md-3 col-sm-6">
-        <div class="stat-item animate-on-scroll">
+        <div class="stat-item">
           <span class="stat-number" data-count="50000">0</span>
-          <span class="stat-label">Books Available</span>
+          <div class="stat-label">Books Available</div>
         </div>
       </div>
       <div class="col-md-3 col-sm-6">
-        <div class="stat-item animate-on-scroll">
-          <span class="stat-number" data-count="1000">0</span>
-          <span class="stat-label">Happy Customers</span>
+        <div class="stat-item">
+          <span class="stat-number" data-count="25000">0</span>
+          <div class="stat-label">Happy Customers</div>
         </div>
       </div>
       <div class="col-md-3 col-sm-6">
-        <div class="stat-item animate-on-scroll">
-          <span class="stat-number" data-count="50">0</span>
-          <span class="stat-label">Institutions Served</span>
+        <div class="stat-item">
+          <span class="stat-number" data-count="100">0</span>
+          <div class="stat-label">Categories</div>
         </div>
       </div>
       <div class="col-md-3 col-sm-6">
-        <div class="stat-item animate-on-scroll">
-          <span class="stat-number" data-count="99">0</span>
-          <span class="stat-label">Satisfaction Rate</span>
+        <div class="stat-item">
+          <span class="stat-number" data-count="5">0</span>
+          <div class="stat-label">Years Experience</div>
         </div>
       </div>
     </div>
@@ -664,46 +624,45 @@
 <footer class="footer" id="contact">
   <div class="container">
     <div class="row">
-      <div class="col-lg-4 footer-section">
-        <h5 class="footer-title">
-          <i class="fas fa-graduation-cap me-2"></i>Pahana Education
-        </h5>
-        <p class="mb-4">Empowering education through innovative book management solutions. Your success is our mission.</p>
+      <div class="col-lg-4 mb-4">
+        <h5 class="footer-title">Pahana Education</h5>
+        <p>Your trusted partner in education and learning. We provide quality books and educational resources to help you achieve your academic goals.</p>
         <div class="social-links">
-          <a href="#" class="social-link"><i class="fab fa-facebook-f"></i></a>
-          <a href="#" class="social-link"><i class="fab fa-twitter"></i></a>
-          <a href="#" class="social-link"><i class="fab fa-linkedin-in"></i></a>
-          <a href="#" class="social-link"><i class="fab fa-instagram"></i></a>
+          <a href="#" class="footer-link d-inline me-3"><i class="fab fa-facebook-f"></i></a>
+          <a href="#" class="footer-link d-inline me-3"><i class="fab fa-twitter"></i></a>
+          <a href="#" class="footer-link d-inline me-3"><i class="fab fa-instagram"></i></a>
+          <a href="#" class="footer-link d-inline"><i class="fab fa-linkedin-in"></i></a>
         </div>
       </div>
-      <div class="col-lg-2 footer-section">
+      <div class="col-lg-2 mb-4">
         <h5 class="footer-title">Quick Links</h5>
         <a href="#home" class="footer-link">Home</a>
         <a href="#books" class="footer-link">Books</a>
         <a href="#about" class="footer-link">About</a>
         <a href="#contact" class="footer-link">Contact</a>
       </div>
-      <div class="col-lg-2 footer-section">
-        <h5 class="footer-title">Services</h5>
-        <a href="#" class="footer-link">Book Management</a>
-        <a href="#" class="footer-link">Inventory Control</a>
-        <a href="#" class="footer-link">Sales Analytics</a>
-        <a href="#" class="footer-link">API Integration</a>
+      <div class="col-lg-3 mb-4">
+        <h5 class="footer-title">Categories</h5>
+        <a href="#" class="footer-link">Textbooks</a>
+        <a href="#" class="footer-link">Fiction</a>
+        <a href="#" class="footer-link">Non-Fiction</a>
+        <a href="#" class="footer-link">Reference</a>
       </div>
-      <div class="col-lg-4 footer-section">
+      <div class="col-lg-3 mb-4">
         <h5 class="footer-title">Contact Info</h5>
-        <p class="footer-link"><i class="fas fa-map-marker-alt me-2"></i>Colombo, Sri Lanka</p>
-        <p class="footer-link"><i class="fas fa-phone me-2"></i>+94 11 234 5678</p>
-        <p class="footer-link"><i class="fas fa-envelope me-2"></i>info@pahanaedu.lk</p>
+        <p class="footer-link"><i class="fas fa-map-marker-alt me-2"></i> 123 Education Street, Learning City</p>
+        <p class="footer-link"><i class="fas fa-phone me-2"></i> +1 (555) 123-4567</p>
+        <p class="footer-link"><i class="fas fa-envelope me-2"></i> info@pahanaedu.com</p>
       </div>
     </div>
-    <hr class="my-4" style="border-color: #34495e;">
+    <hr class="my-4" style="border-color: #374151;">
     <div class="row align-items-center">
       <div class="col-md-6">
-        <p class="mb-0">&copy; 2024 Pahana Education. All rights reserved.</p>
+        <p>&copy; 2025 Pahana Education. All rights reserved.</p>
       </div>
       <div class="col-md-6 text-md-end">
-        <p class="mb-0">Built with <i class="fas fa-heart text-danger"></i> in Sri Lanka</p>
+        <a href="#" class="footer-link me-3">Privacy Policy</a>
+        <a href="#" class="footer-link">Terms of Service</a>
       </div>
     </div>
   </div>
@@ -711,119 +670,223 @@
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-  // Floating shapes animation
-  function createFloatingShapes() {
-    const shapesContainer = document.querySelector('.floating-shapes');
-    const shapes = ['circle', 'square'];
+  // Configuration
+  const API_KEY = 'AIzaSyDhoqdHraaknp7HgKscwjrxY3Ob2xn5Hag';
+  const API_BASE_URL = 'https://www.googleapis.com/books/v1/volumes';
 
-    setInterval(() => {
-      const shape = document.createElement('div');
-      const isCircle = Math.random() > 0.5;
+  // Sample popular books for fallback
+  const SAMPLE_BOOKS = [
+    {
+      title: "The Great Gatsby",
+      author: "F. Scott Fitzgerald",
+      image: "https://covers.openlibrary.org/b/isbn/9780743273565-L.jpg",
+      description: "A classic American novel set in the Jazz Age, exploring themes of wealth, love, and the American Dream.",
+      rating: 4.2,
+      price: "$12.99"
+    },
+    {
+      title: "To Kill a Mockingbird",
+      author: "Harper Lee",
+      image: "https://covers.openlibrary.org/b/isbn/9780061120084-L.jpg",
+      description: "A gripping tale of racial injustice and childhood innocence in the American South.",
+      rating: 4.5,
+      price: "$14.99"
+    },
+    {
+      title: "1984",
+      author: "George Orwell",
+      image: "https://covers.openlibrary.org/b/isbn/9780451524935-L.jpg",
+      description: "A dystopian social science fiction novel about totalitarian control and surveillance.",
+      rating: 4.3,
+      price: "$13.99"
+    },
+    {
+      title: "Pride and Prejudice",
+      author: "Jane Austen",
+      image: "https://covers.openlibrary.org/b/isbn/9780141439518-L.jpg",
+      description: "A romantic novel dealing with issues of manners, upbringing, and marriage.",
+      rating: 4.4,
+      price: "$11.99"
+    },
+    {
+      title: "The Catcher in the Rye",
+      author: "J.D. Salinger",
+      image: "https://covers.openlibrary.org/b/isbn/9780316769174-L.jpg",
+      description: "A controversial novel about teenage rebellion and alienation in post-war America.",
+      rating: 3.8,
+      price: "$12.99"
+    },
+    {
+      title: "Lord of the Flies",
+      author: "William Golding",
+      image: "https://covers.openlibrary.org/b/isbn/9780571056866-L.jpg",
+      description: "A story about a group of British boys stranded on an uninhabited island.",
+      rating: 4.0,
+      price: "$10.99"
+    },
+    {
+      title: "Harry Potter and the Philosopher's Stone",
+      author: "J.K. Rowling",
+      image: "https://covers.openlibrary.org/b/isbn/9780747532699-L.jpg",
+      description: "The first book in the magical Harry Potter series about a young wizard's adventures.",
+      rating: 4.7,
+      price: "$15.99"
+    },
+    {
+      title: "The Hobbit",
+      author: "J.R.R. Tolkien",
+      image: "https://covers.openlibrary.org/b/isbn/9780547928227-L.jpg",
+      description: "A fantasy novel about Bilbo Baggins' unexpected journey to reclaim treasure.",
+      rating: 4.6,
+      price: "$16.99"
+    }
+  ];
 
-      shape.className = `shape ${isCircle ? 'circle' : 'square'}`;
-      shape.style.left = Math.random() * 100 + '%';
-      shape.style.width = shape.style.height = (Math.random() * 100 + 20) + 'px';
-      shape.style.animationDuration = (Math.random() * 10 + 15) + 's';
-      shape.style.animationDelay = Math.random() * 5 + 's';
-
-      shapesContainer.appendChild(shape);
-
-      setTimeout(() => {
-        shape.remove();
-      }, 25000);
-    }, 3000);
-  }
-
-  // Load popular books from Google Books API
+  // Load popular books
   async function loadPopularBooks() {
     const container = document.getElementById('popularBooksContainer');
-    const loading = container.querySelector('.loading');
 
     try {
-      loading.style.display = 'block';
+      // Try to load from Google Books API
+      const response = await fetch(`${API_BASE_URL}?q=bestsellers&maxResults=8&key=${API_KEY}`);
 
-      // Popular search terms for educational books
-      const searchTerms = ['programming', 'mathematics', 'science', 'literature', 'history', 'psychology'];
-      const randomTerm = searchTerms[Math.floor(Math.random() * searchTerms.length)];
-
-      const response = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${randomTerm}&maxResults=8&orderBy=relevance`);
-      const data = await response.json();
-
-      loading.style.display = 'none';
-
-      if (data.items) {
-        displayBooks(data.items, container);
-      } else {
-        container.innerHTML = '<div class="col-12 text-center"><p>No books found</p></div>';
+      if (response.ok) {
+        const data = await response.json();
+        if (data.items && data.items.length > 0) {
+          displayBooks(data.items, container);
+          return;
+        }
       }
     } catch (error) {
-      loading.style.display = 'none';
-      container.innerHTML = '<div class="col-12 text-center"><p class="text-danger">Error loading books. Please try again later.</p></div>';
+      console.log('API failed, using sample books:', error);
     }
+
+    // Fallback to sample books
+    displaySampleBooks(container);
   }
 
-  // Search books function
-  async function searchBooks(query) {
-    const resultsSection = document.getElementById('searchResults');
-    const container = document.getElementById('searchResultsContainer');
-
-    try {
-      container.innerHTML = '<div class="col-12 text-center"><div class="spinner"></div><p>Searching...</p></div>';
-      resultsSection.classList.remove('d-none');
-
-      const response = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}&maxResults=12`);
-      const data = await response.json();
-
-      if (data.items) {
-        displayBooks(data.items, container);
-        resultsSection.scrollIntoView({ behavior: 'smooth' });
-      } else {
-        container.innerHTML = '<div class="col-12 text-center"><p>No books found for your search.</p></div>';
-      }
-    } catch (error) {
-      container.innerHTML = '<div class="col-12 text-center"><p class="text-danger">Error searching books. Please try again.</p></div>';
-    }
-  }
-
-  // Display books function
+  // Display books from API
   function displayBooks(books, container) {
     const booksHTML = books.map(book => {
       const volumeInfo = book.volumeInfo;
-      const title = volumeInfo.title || 'No title available';
-      const authors = volumeInfo.authors ? volumeInfo.authors.join(', ') : 'Unknown author';
-      const thumbnail = volumeInfo.imageLinks ? volumeInfo.imageLinks.thumbnail : 'https://via.placeholder.com/150x200?text=No+Image';
+      const title = volumeInfo.title || 'Unknown Title';
+      const authors = volumeInfo.authors ? volumeInfo.authors.join(', ') : 'Unknown Author';
+      const thumbnail = volumeInfo.imageLinks?.thumbnail || volumeInfo.imageLinks?.smallThumbnail || 'https://via.placeholder.com/200x280/e2e8f0/64748b?text=No+Image';
       const description = volumeInfo.description ?
-              (volumeInfo.description.length > 100 ? volumeInfo.description.substring(0, 100) + '...' : volumeInfo.description) :
+              (volumeInfo.description.length > 150 ? volumeInfo.description.substring(0, 147) + '...' : volumeInfo.description) :
               'No description available';
-      const rating = volumeInfo.averageRating || 0;
-      const ratingStars = '★'.repeat(Math.floor(rating)) + '☆'.repeat(5 - Math.floor(rating));
+      const rating = volumeInfo.averageRating || (Math.random() * 2 + 3).toFixed(1);
+      const price = volumeInfo.listPrice ?
+              `$${volumeInfo.listPrice.amount}` :
+              `$${(Math.random() * 20 + 10).toFixed(2)}`;
 
-      return `
-                    <div class="col-lg-3 col-md-4 col-sm-6 mb-4">
-                        <div class="book-card animate-on-scroll">
-                            <img src="${thumbnail}" alt="${title}" class="book-image">
-                            <h5 class="book-title">${title}</h5>
-                            <p class="book-author">by ${authors}</p>
-                            <div class="book-rating">${ratingStars} (${rating || 'N/A'})</div>
-                            <p class="text-muted small">${description}</p>
-                            <div class="mt-auto">
-                                <button class="btn btn-primary btn-sm w-100" onclick="viewBookDetails('${book.id}')">
-                                    <i class="fas fa-eye me-1"></i>View Details
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                `;
+      return createBookCardHTML(title, authors, thumbnail, description, rating, price);
     }).join('');
 
     container.innerHTML = booksHTML;
     animateOnScroll();
   }
 
-  // View book details function
-  function viewBookDetails(bookId) {
-    // For now, we'll just show an alert. In a real app, this would open a modal or navigate to a details page
-    alert(`Book details for ID: ${bookId}\n\nThis would typically open a detailed view of the book with options to add to cart, read reviews, etc.`);
+  // Display sample books as fallback
+  function displaySampleBooks(container) {
+    const booksHTML = SAMPLE_BOOKS.map(book =>
+            createBookCardHTML(book.title, book.author, book.image, book.description, book.rating, book.price)
+    ).join('');
+
+    container.innerHTML = booksHTML;
+    animateOnScroll();
+  }
+
+  // Create book card HTML
+  function createBookCardHTML(title, authors, thumbnail, description, rating, price) {
+    const stars = '★'.repeat(Math.floor(rating)) + '☆'.repeat(5 - Math.floor(rating));
+
+    return `
+            <div class="col-lg-3 col-md-6 mb-4">
+                <div class="book-card animate-on-scroll">
+                    <img src="${thumbnail}" alt="${title}" class="book-image" onerror="this.src='https://via.placeholder.com/200x280/e2e8f0/64748b?text=No+Image'">
+                    <h5 class="book-title">${title}</h5>
+                    <p class="book-author">by ${authors}</p>
+                    <div class="book-rating">
+                        <span class="stars">${stars}</span>
+                        <span class="rating-text">(${rating})</span>
+                    </div>
+                    <p class="book-description">${description}</p>
+                    <div class="book-price">${price}</div>
+                    <button class="btn btn-primary w-100" onclick="addToCart('${title.replace(/'/g, "\\'")}')">
+                        <i class="fas fa-cart-plus me-2"></i>Add to Cart
+                    </button>
+                </div>
+            </div>
+        `;
+  }
+
+  // Search books
+  async function searchBooks(query) {
+    const resultsSection = document.getElementById('searchResults');
+    const container = document.getElementById('searchResultsContainer');
+    const booksSection = document.getElementById('books');
+
+    // Show loading
+    container.innerHTML = `
+            <div class="loading">
+                <div class="spinner"></div>
+                <p>Searching for "${query}"...</p>
+            </div>
+        `;
+
+    resultsSection.classList.remove('d-none');
+    booksSection.style.display = 'none';
+
+    try {
+      const response = await fetch(`${API_BASE_URL}?q=${encodeURIComponent(query)}&maxResults=12&key=${API_KEY}`);
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.items && data.items.length > 0) {
+          displayBooks(data.items, container);
+        } else {
+          container.innerHTML = `
+                        <div class="col-12 text-center py-5">
+                            <i class="fas fa-search fa-3x text-muted mb-3"></i>
+                            <h5>No books found</h5>
+                            <p class="text-muted">No books found for "${query}". Try different search terms.</p>
+                            <button class="btn btn-primary" onclick="showPopularBooks()">Browse Popular Books</button>
+                        </div>
+                    `;
+        }
+      } else {
+        throw new Error('Search failed');
+      }
+    } catch (error) {
+      console.error('Search error:', error);
+      container.innerHTML = `
+                <div class="col-12 text-center py-5">
+                    <i class="fas fa-exclamation-triangle fa-3x text-warning mb-3"></i>
+                    <h5>Search Error</h5>
+                    <p class="text-muted">Unable to search at the moment. Please try again later.</p>
+                    <button class="btn btn-primary" onclick="showPopularBooks()">Browse Popular Books</button>
+                </div>
+            `;
+    }
+  }
+
+  // Show popular books
+  function showPopularBooks() {
+    const resultsSection = document.getElementById('searchResults');
+    const booksSection = document.getElementById('books');
+
+    resultsSection.classList.add('d-none');
+    booksSection.style.display = 'block';
+
+    // Clear search
+    document.getElementById('bookSearch').value = '';
+  }
+
+  // Add to cart function
+  function addToCart(bookTitle) {
+    // Simple alert for now - in real app this would add to cart
+    alert(`"${bookTitle}" has been added to your cart!`);
   }
 
   // Animate on scroll
@@ -834,7 +897,7 @@
           entry.target.classList.add('animated');
         }
       });
-    });
+    }, { threshold: 0.1 });
 
     document.querySelectorAll('.animate-on-scroll').forEach(el => {
       observer.observe(el);
@@ -857,11 +920,10 @@
           const timer = setInterval(() => {
             current += step;
             if (current >= target) {
-              counter.textContent = target.toLocaleString();
+              current = target;
               clearInterval(timer);
-            } else {
-              counter.textContent = Math.floor(current).toLocaleString();
             }
+            counter.textContent = Math.floor(current).toLocaleString();
           }, 16);
 
           observer.unobserve(counter);
@@ -872,7 +934,7 @@
     counters.forEach(counter => observer.observe(counter));
   }
 
-  // Smooth scrolling for navigation links
+  // Smooth scrolling
   document.querySelectorAll('a[href^="#"]').forEach(anchor => {
     anchor.addEventListener('click', function (e) {
       e.preventDefault();
@@ -900,16 +962,13 @@
     const navbar = document.querySelector('.navbar');
     if (window.scrollY > 50) {
       navbar.style.background = 'rgba(255, 255, 255, 0.98)';
-      navbar.style.boxShadow = '0 8px 32px rgba(31, 38, 135, 0.5)';
     } else {
       navbar.style.background = 'rgba(255, 255, 255, 0.95)';
-      navbar.style.boxShadow = '0 8px 32px rgba(31, 38, 135, 0.37)';
     }
   });
 
-  // Initialize everything when DOM is loaded
+  // Initialize everything
   document.addEventListener('DOMContentLoaded', function() {
-    createFloatingShapes();
     loadPopularBooks();
     animateOnScroll();
     animateCounters();
