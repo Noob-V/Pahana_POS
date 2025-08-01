@@ -1,4 +1,3 @@
-// src/main/java/com/pahanaedu/dao/impl/BillDAOImpl.java
 package com.pahanaedu.dao.impl;
 
 import com.pahanaedu.dao.BillDAO;
