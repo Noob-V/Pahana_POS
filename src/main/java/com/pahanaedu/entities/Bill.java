@@ -1,4 +1,3 @@
-// src/main/java/com/pahanaedu/entities/Bill.java
 package com.pahanaedu.entities;
 
 import java.math.BigDecimal;
@@ -20,7 +19,6 @@ public class Bill {
     private String notes;
     private LocalDateTime createdDate;
 
-    // Additional fields for display
     private String customerName;
     private String userName;
     private List<BillItem> billItems;
