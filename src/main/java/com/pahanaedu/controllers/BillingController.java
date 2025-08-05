@@ -1,5 +1,6 @@
 package com.pahanaedu.controllers;
 
+import com.pahanaedu.dto.BillDTO;
 import com.pahanaedu.entities.Bill;
 import com.pahanaedu.entities.Book;
 import com.pahanaedu.entities.CartItem;
@@ -100,7 +101,8 @@ public class BillingController extends HttpServlet {
 
     private void listBills(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        List<Bill> bills = billService.findAll();
+        // Replace with DTO version
+        List<BillDTO> bills = billService.findAllDTOs();
         request.setAttribute("bills", bills);
         request.getRequestDispatcher("/WEB-INF/views/billing/list.jsp").forward(request, response);
     }
@@ -286,6 +288,18 @@ public class BillingController extends HttpServlet {
         // Save bill with items
         Bill savedBill = billService.saveBillWithItems(bill, cart);
 
+        // Critical: Update inventory quantities for purchased books
+        for (CartItem item : cart) {
+            Optional<Book> bookOpt = bookService.findByIsbn(item.getIsbn());
+            if (bookOpt.isPresent()) {
+                Book book = bookOpt.get();
+                int newQuantity = book.getQuantity() - item.getQuantity();
+                // Ensure quantity doesn't go negative
+                if (newQuantity < 0) newQuantity = 0;
+                bookService.updateQuantity(item.getIsbn(), newQuantity);
+            }
+        }
+
         // Clear cart
         session.removeAttribute("cart");
 
@@ -296,10 +310,11 @@ public class BillingController extends HttpServlet {
     private void showReceipt(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         String billId = request.getParameter("billId");
-        Optional<Bill> billOpt = billService.findById(billId);
+
+        Optional<BillDTO> billOpt = billService.findDTOById(billId);
 
         if (billOpt.isPresent()) {
-            Bill bill = billOpt.get();
+            BillDTO bill = billOpt.get();
 
             // Get customer details if available
             if (bill.getCustomerAccountNumber() != null) {
