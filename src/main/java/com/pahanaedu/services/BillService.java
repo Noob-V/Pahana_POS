@@ -1,5 +1,6 @@
 package com.pahanaedu.services;
 
+import com.pahanaedu.dto.BillDTO;
 import com.pahanaedu.entities.Bill;
 import com.pahanaedu.entities.CartItem;
 import java.util.List;
@@ -15,4 +16,11 @@ public interface BillService {
     Bill save(Bill bill);
     Bill saveBillWithItems(Bill bill, List<CartItem> items);
     boolean deleteById(String billId);  // Changed from Integer to String
+
+    Optional<BillDTO> findDTOById(String billId);
+    List<BillDTO> findAllDTOs();
+    List<BillDTO> getRecentBillDTOs(int limit);
+    List<BillDTO> getBillDTOsByDateRange(LocalDate start, LocalDate end);
+    List<BillDTO> getBillDTOsByDate(LocalDate date);
+    BillDTO saveDTO(BillDTO billDTO);
 }
