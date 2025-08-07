@@ -2,106 +2,94 @@ package com.pahanaedu.patterns.builder;
 
 import com.pahanaedu.entities.Bill;
 import com.pahanaedu.entities.BillItem;
-import com.pahanaedu.utils.Constants;
+
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.UUID;
+import java.util.List;
 
 public class BillBuilder {
-    private Bill bill;
+    private final Bill bill;
 
     public BillBuilder() {
-        this.bill = new Bill();
-        this.bill.setBillItems(new ArrayList<>());
-        this.bill.setBillDate(LocalDateTime.now());
-        this.bill.setCreatedDate(LocalDateTime.now());
-        this.bill.setPaymentMethod("CASH");
-        this.bill.setPaymentStatus("PAID");
-        this.bill.setDiscountAmount(BigDecimal.ZERO);
-        // Generate unique bill ID
-        this.bill.setBillId(Constants.BILL_PREFIX + "-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase());
+        bill = new Bill();
     }
 
-    public BillBuilder setCustomerAccountNumber(String customerAccountNumber) {
-        this.bill.setCustomerAccountNumber(customerAccountNumber);
+    public BillBuilder billId(String billId) {
+        bill.setBillId(billId);
         return this;
     }
 
-    public BillBuilder setUserId(Integer userId) {
-        this.bill.setUserId(userId);
+    public BillBuilder customerAccountNumber(String accountNumber) {
+        bill.setCustomerAccountNumber(accountNumber);
         return this;
     }
 
-    public BillBuilder setCustomerName(String customerName) {
-        this.bill.setCustomerName(customerName);
+    public BillBuilder userId(Integer userId) {
+        bill.setUserId(userId);
         return this;
     }
 
-    public BillBuilder setUserName(String userName) {
-        this.bill.setUserName(userName);
+    public BillBuilder billDate(LocalDateTime billDate) {
+        bill.setBillDate(billDate);
         return this;
     }
 
-    public BillBuilder addItem(String isbn, String bookTitle, Integer quantity, BigDecimal unitPrice) {
-        BillItem item = new BillItem();
-        item.setBillId(this.bill.getBillId());
-        item.setIsbn(isbn);
-        item.setBookTitle(bookTitle);
-        item.setQuantity(quantity);
-        item.setUnitPrice(unitPrice);
-        item.setTotalPrice(unitPrice.multiply(BigDecimal.valueOf(quantity)));
-        item.setDiscountAmount(BigDecimal.ZERO);
-
-        this.bill.getBillItems().add(item);
+    public BillBuilder subtotal(BigDecimal subtotal) {
+        bill.setSubtotal(subtotal);
         return this;
     }
 
-    public BillBuilder setDiscountAmount(BigDecimal discountAmount) {
-        this.bill.setDiscountAmount(discountAmount != null ? discountAmount : BigDecimal.ZERO);
+    public BillBuilder taxAmount(BigDecimal taxAmount) {
+        bill.setTaxAmount(taxAmount);
         return this;
     }
 
-    public BillBuilder setPaymentMethod(String paymentMethod) {
-        this.bill.setPaymentMethod(paymentMethod);
+    public BillBuilder discountAmount(BigDecimal discountAmount) {
+        bill.setDiscountAmount(discountAmount);
         return this;
     }
 
-    public BillBuilder setPaymentStatus(String paymentStatus) {
-        this.bill.setPaymentStatus(paymentStatus);
+    public BillBuilder totalAmount(BigDecimal totalAmount) {
+        bill.setTotalAmount(totalAmount);
         return this;
     }
 
-    public BillBuilder setNotes(String notes) {
-        this.bill.setNotes(notes);
+    public BillBuilder paymentMethod(String paymentMethod) {
+        bill.setPaymentMethod(paymentMethod);
+        return this;
+    }
+
+    public BillBuilder paymentStatus(String paymentStatus) {
+        bill.setPaymentStatus(paymentStatus);
+        return this;
+    }
+
+    public BillBuilder notes(String notes) {
+        bill.setNotes(notes);
+        return this;
+    }
+
+    public BillBuilder createdDate(LocalDateTime createdDate) {
+        bill.setCreatedDate(createdDate);
+        return this;
+    }
+
+    public BillBuilder customerName(String customerName) {
+        bill.setCustomerName(customerName);
+        return this;
+    }
+
+    public BillBuilder userName(String userName) {
+        bill.setUserName(userName);
+        return this;
+    }
+
+    public BillBuilder billItems(List<BillItem> billItems) {
+        bill.setBillItems(billItems);
         return this;
     }
 
     public Bill build() {
-        calculateTotals();
-        return this.bill;
-    }
-
-    private void calculateTotals() {
-        // Calculate subtotal from all bill items
-        BigDecimal subtotal = bill.getBillItems().stream()
-                .map(BillItem::getTotalPrice)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-        bill.setSubtotal(subtotal);
-
-        // Apply discount
-        BigDecimal discountAmount = bill.getDiscountAmount() != null ?
-                bill.getDiscountAmount() : BigDecimal.ZERO;
-        BigDecimal subtotalAfterDiscount = subtotal.subtract(discountAmount);
-
-        // Calculate tax using default tax rate
-        BigDecimal taxRate = BigDecimal.valueOf(Constants.DEFAULT_TAX_RATE);
-        BigDecimal taxAmount = subtotalAfterDiscount.multiply(taxRate);
-        bill.setTaxAmount(taxAmount);
-
-        // Calculate final total
-        BigDecimal totalAmount = subtotalAfterDiscount.add(taxAmount);
-        bill.setTotalAmount(totalAmount);
+        return bill;
     }
 }
