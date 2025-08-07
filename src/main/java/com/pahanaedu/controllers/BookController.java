@@ -1,6 +1,6 @@
-// src/main/java/com/pahanaedu/controllers/BookController.java
 package com.pahanaedu.controllers;
 
+import com.pahanaedu.dto.BookDTO;
 import com.pahanaedu.entities.Book;
 import com.pahanaedu.entities.Category;
 import com.pahanaedu.services.BookService;
@@ -91,10 +91,12 @@ public class BookController extends HttpServlet {
         }
     }
 
+
+
     private void listBooks(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         try {
-            List<Book> books = bookService.findAll();
+            List<BookDTO> books = bookService.findAllDTOs();
             List<Book> lowStockBooks = bookService.findLowStockBooks();
             List<Category> categories = categoryService.findActive();
 
@@ -122,31 +124,34 @@ public class BookController extends HttpServlet {
 
     private void showEditForm(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
+        String isbn = request.getParameter("isbn");
+        if (isbn == null || isbn.trim().isEmpty()) {
+            response.sendRedirect(request.getContextPath() + "/books?error=invalid-isbn");
+            return;
+        }
+
         try {
-            String isbn = request.getParameter("isbn");
             Optional<Book> bookOpt = bookService.findByIsbn(isbn);
-
             if (bookOpt.isPresent()) {
-                Book book = bookOpt.get();
-                List<Category> categories = categoryService.findActive();
+                request.setAttribute("book", bookOpt.get());
 
-                request.setAttribute("book", book);
+                List<Category> categories = categoryService.findActive();
                 request.setAttribute("categories", categories);
+
                 request.getRequestDispatcher("/WEB-INF/views/books/edit.jsp").forward(request, response);
             } else {
                 response.sendRedirect(request.getContextPath() + "/books?error=book-not-found");
             }
         } catch (Exception e) {
-            request.setAttribute("errorMessage", "Error loading book: " + e.getMessage());
-            request.getRequestDispatcher("/WEB-INF/views/error.jsp").forward(request, response);
+            response.sendRedirect(request.getContextPath() + "/books?error=load-failed");
         }
     }
 
     private void addBook(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         try {
-            Book book = createBookFromRequest(request);
-            bookService.save(book);
+            BookDTO bookDTO = createBookDTOFromRequest(request);
+            bookService.saveDTO(bookDTO);
 
             response.sendRedirect(request.getContextPath() + "/books?message=book-added");
         } catch (Exception e) {
@@ -184,7 +189,7 @@ public class BookController extends HttpServlet {
             throws ServletException, IOException {
         try {
             String query = request.getParameter("q");
-            List<Book> books = bookService.searchBooks(query);
+            List<BookDTO> books = bookService.searchBookDTOs(query);
 
             request.setAttribute("books", books);
             request.setAttribute("searchQuery", query);
@@ -195,20 +200,19 @@ public class BookController extends HttpServlet {
         }
     }
 
-    // Add this method to BookController
     private void filterBooks(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         try {
             String categoryIdStr = request.getParameter("categoryId");
-            List<Book> books;
+            List<BookDTO> books;
             List<Category> categories = categoryService.findActive();
 
             if (categoryIdStr != null && !categoryIdStr.trim().isEmpty()) {
                 Integer categoryId = Integer.parseInt(categoryIdStr);
-                books = bookService.findByCategoryId(categoryId);
+                books = bookService.findByCategoryIdDTOs(categoryId); // Use new DTO method
                 request.setAttribute("selectedCategoryId", categoryId);
             } else {
-                books = bookService.findAll();
+                books = bookService.findAllDTOs();
             }
 
             List<Book> lowStockBooks = bookService.findLowStockBooks();
@@ -385,5 +389,53 @@ public class BookController extends HttpServlet {
         }
 
         return book;
+    }
+    private BookDTO createBookDTOFromRequest(HttpServletRequest request) {
+        BookDTO bookDTO = new BookDTO();
+        bookDTO.setIsbn(request.getParameter("isbn"));
+        bookDTO.setTitle(request.getParameter("title"));
+        bookDTO.setAuthor(request.getParameter("author"));
+        bookDTO.setPublisher(request.getParameter("publisher"));
+        bookDTO.setDescription(request.getParameter("description"));
+
+        // Handle imageUrl parameter
+        String imageUrl = request.getParameter("imageUrl");
+        if (imageUrl != null && !imageUrl.trim().isEmpty()) {
+            bookDTO.setImageUrl(imageUrl.trim());
+        }
+
+        // Handle price parameter
+        String priceStr = request.getParameter("price");
+        if (priceStr != null && !priceStr.trim().isEmpty()) {
+            bookDTO.setPrice(new BigDecimal(priceStr));
+        } else {
+            bookDTO.setPrice(BigDecimal.ZERO);
+        }
+
+        // Handle quantity parameter
+        String quantityStr = request.getParameter("quantity");
+        if (quantityStr != null && !quantityStr.trim().isEmpty()) {
+            bookDTO.setQuantity(Integer.parseInt(quantityStr));
+        } else {
+            bookDTO.setQuantity(0);
+        }
+
+        // Handle minStockLevel parameter
+        String minStockStr = request.getParameter("minStockLevel");
+        if (minStockStr != null && !minStockStr.trim().isEmpty()) {
+            bookDTO.setMinStockLevel(Integer.parseInt(minStockStr));
+        } else {
+            bookDTO.setMinStockLevel(5);
+        }
+
+        // Handle active parameter
+        String activeStr = request.getParameter("active");
+        if (activeStr != null) {
+            bookDTO.setActive(Boolean.parseBoolean(activeStr));
+        } else {
+            bookDTO.setActive(true);
+        }
+
+        return bookDTO;
     }
 }
