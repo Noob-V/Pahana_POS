@@ -75,6 +75,9 @@
           <a class="nav-link" href="${pageContext.request.contextPath}/customers">
             <i class="fas fa-users me-2"></i> Customers
           </a>
+          <a class="nav-link" href="${pageContext.request.contextPath}/staff">
+            <i class="fas fa-user-tie me-2"></i> Staff Management
+          </a>
           <a class="nav-link" href="${pageContext.request.contextPath}/billing/pos">
             <i class="fas fa-cash-register me-2"></i> Point of Sale
           </a>
@@ -217,6 +220,9 @@
                   </a>
                   <a href="${pageContext.request.contextPath}/customers/add" class="btn btn-success">
                     <i class="fas fa-user-plus me-2"></i>Add Customer
+                  </a>
+                  <a href="${pageContext.request.contextPath}/staff/add" class="btn btn-primary">
+                    <i class="fas fa-plus me-2"></i> Add Staff
                   </a>
                   <a href="${pageContext.request.contextPath}/billing/pos" class="btn btn-info">
                     <i class="fas fa-cash-register me-2"></i>New Sale

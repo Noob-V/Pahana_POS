@@ -29,7 +29,6 @@
 
 <div class="container mt-4">
   <!-- Header -->
-  <!-- Header -->
   <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
       <h2><i class="fas fa-users"></i> Customer Management</h2>

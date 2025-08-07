@@ -118,7 +118,13 @@
       <div class="card bg-success text-white">
         <div class="card-body text-center">
           <h3><i class="fas fa-check-circle"></i>
-            ${books.stream().filter(b -> b.active).count()}
+            <c:set var="activeCount" value="0" />
+            <c:forEach items="${books}" var="book">
+              <c:if test="${book.active}">
+                <c:set var="activeCount" value="${activeCount + 1}" />
+              </c:if>
+            </c:forEach>
+            ${activeCount}
           </h3>
           <p class="mb-0">Active Books</p>
         </div>

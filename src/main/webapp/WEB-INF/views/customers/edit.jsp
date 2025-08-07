@@ -52,7 +52,7 @@
               </div>
               <div class="col-md-6">
                 <strong>Customer Since:</strong>
-                <fmt:formatDate value="${customer.createdDate}" pattern="MMM dd, yyyy"/>
+                <fmt:formatDate value="${customer.createdDateAsDate}" pattern="MMM dd, yyyy"/>
               </div>
             </div>
           </div>
@@ -76,7 +76,7 @@
             <div class="mb-3">
               <label for="phone" class="form-label">Phone Number</label>
               <input type="tel" class="form-control" id="phone" name="phone"
-                     value="${customer.phoneNumber}" placeholder="e.g., +1-555-123-4567">
+                     value="${customer.phoneNumber}" placeholder="e.g., +94 77 123 4567">
             </div>
 
             <div class="mb-3">

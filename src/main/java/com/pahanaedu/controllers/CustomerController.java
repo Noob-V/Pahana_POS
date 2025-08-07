@@ -1,6 +1,6 @@
-// src/main/java/com/pahanaedu/controllers/CustomerController.java
 package com.pahanaedu.controllers;
 
+import com.pahanaedu.dto.CustomerDTO;
 import com.pahanaedu.entities.Customer;
 import com.pahanaedu.services.CustomerService;
 import com.pahanaedu.services.impl.CustomerServiceImpl;
@@ -14,13 +14,11 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 @WebServlet(name = "CustomerController", urlPatterns = {
         "/customers", "/customers/add", "/customers/edit", "/customers/delete",
-        "/customers/search", "/customers/bills"
+        "/customers/search", "/customers/bills", "/customers/quick"
 })
-
 public class CustomerController extends HttpServlet {
     private CustomerService customerService;
 
@@ -51,6 +49,9 @@ public class CustomerController extends HttpServlet {
             case "/customers/bills":
                 showCustomerBills(request, response);
                 break;
+            case "/customers/quick":
+                showQuickCustomerForm(request, response);
+                break;
             case "/customers":
             default:
                 listCustomers(request, response);
@@ -70,6 +71,9 @@ public class CustomerController extends HttpServlet {
             case "/customers/edit":
                 updateCustomer(request, response);
                 break;
+            case "/customers/quick":
+                createQuickCustomer(request, response);
+                break;
             default:
                 listCustomers(request, response);
                 break;
@@ -79,7 +83,7 @@ public class CustomerController extends HttpServlet {
     private void listCustomers(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         try {
-            List<Customer> customers = customerService.findAll();
+            List<CustomerDTO> customers = customerService.findAllDTOs();
             request.setAttribute("customers", customers);
             request.getRequestDispatcher("/WEB-INF/views/customers/list.jsp").forward(request, response);
         } catch (Exception e) {
@@ -97,14 +101,12 @@ public class CustomerController extends HttpServlet {
                 return;
             }
 
-            // Get customer details
             Optional<Customer> customerOpt = customerService.findByAccountNumber(accountNumber);
             if (!customerOpt.isPresent()) {
                 response.sendRedirect(request.getContextPath() + "/customers?error=customer-not-found");
                 return;
             }
 
-            // Get customer bills
             List<Bill> bills = customerService.findBillsByCustomer(accountNumber);
 
             request.setAttribute("customer", customerOpt.get());
@@ -121,14 +123,19 @@ public class CustomerController extends HttpServlet {
         request.getRequestDispatcher("/WEB-INF/views/customers/add.jsp").forward(request, response);
     }
 
+    private void showQuickCustomerForm(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+        request.getRequestDispatcher("/WEB-INF/views/customers/quick.jsp").forward(request, response);
+    }
+
     private void showEditForm(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         try {
             String accountNumber = request.getParameter("accountNumber");
-            Optional<Customer> customerOpt = customerService.findByAccountNumber(accountNumber);
+            CustomerDTO customer = customerService.findCustomerDTOByAccountNumber(accountNumber);
 
-            if (customerOpt.isPresent()) {
-                request.setAttribute("customer", customerOpt.get());
+            if (customer != null) {
+                request.setAttribute("customer", customer);
                 request.getRequestDispatcher("/WEB-INF/views/customers/edit.jsp").forward(request, response);
             } else {
                 response.sendRedirect(request.getContextPath() + "/customers?error=customer-not-found");
@@ -154,8 +161,8 @@ public class CustomerController extends HttpServlet {
     private void updateCustomer(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         try {
-            Customer customer = createCustomerFromRequest(request);
-            customerService.update(customer);
+            CustomerDTO customerDTO = createCustomerDTOFromRequest(request);
+            customerService.updateDTO(customerDTO);
             response.sendRedirect(request.getContextPath() + "/customers?message=customer-updated");
         } catch (Exception e) {
             request.setAttribute("errorMessage", "Error updating customer: " + e.getMessage());
@@ -175,102 +182,98 @@ public class CustomerController extends HttpServlet {
     }
 
     private void searchCustomers(HttpServletRequest request, HttpServletResponse response)
-            throws IOException {
-        response.setContentType("application/json");
-        response.setCharacterEncoding("UTF-8");
-
+            throws ServletException, IOException {
         try {
             String query = request.getParameter("q");
             if (query == null || query.trim().isEmpty()) {
-                response.getWriter().write("[]");
+                listCustomers(request, response);
                 return;
             }
 
-            List<Customer> customers = customerService.searchByName(query);
-
-            // Limit to 10 results for performance
-            List<Customer> limitedCustomers = customers.stream()
-                    .limit(10)
-                    .collect(Collectors.toList());
-
-            StringBuilder json = new StringBuilder();
-            json.append("[");
-
-            for (int i = 0; i < limitedCustomers.size(); i++) {
-                Customer customer = limitedCustomers.get(i);
-                if (i > 0) json.append(",");
-                json.append("{")
-                        .append("\"accountNumber\":\"").append(escapeJson(customer.getAccountNumber())).append("\",")
-                        .append("\"name\":\"").append(escapeJson(customer.getName())).append("\",")
-                        .append("\"email\":\"").append(escapeJson(customer.getEmail())).append("\",")
-                        .append("\"phone\":\"").append(escapeJson(customer.getPhoneNumber())).append("\"")
-                        .append("}");
-            }
-
-            json.append("]");
-            response.getWriter().write(json.toString());
+            List<CustomerDTO> customers = customerService.searchCustomerDTOsByName(query);
+            request.setAttribute("customers", customers);
+            request.setAttribute("searchQuery", query);
+            request.getRequestDispatcher("/WEB-INF/views/customers/list.jsp").forward(request, response);
         } catch (Exception e) {
-            response.getWriter().write("[]");
+            request.setAttribute("errorMessage", "Error searching customers: " + e.getMessage());
+            request.getRequestDispatcher("/WEB-INF/views/error.jsp").forward(request, response);
         }
     }
 
-    private String escapeJson(String str) {
-        if (str == null) return "";
-        return str.replace("\\", "\\\\")
-                .replace("\"", "\\\"")
-                .replace("\n", "\\n")
-                .replace("\r", "\\r")
-                .replace("\t", "\\t");
-    }
-
+    // Updated to use CustomerFactory through service
     private Customer createCustomerFromRequest(HttpServletRequest request) {
-        Customer customer = new Customer();
-        customer.setAccountNumber(request.getParameter("accountNumber"));
-        customer.setName(request.getParameter("name"));
-        customer.setEmail(request.getParameter("email"));
-
-        // Handle phone parameter
+        String accountNumber = request.getParameter("accountNumber");
+        String name = request.getParameter("name");
         String phone = request.getParameter("phone");
-        if (phone != null && !phone.trim().isEmpty()) {
-            customer.setPhoneNumber(phone);
-        }
+        String email = request.getParameter("email");
 
-        // Handle address parameter
+        // Build full address from separate components
+        StringBuilder fullAddress = new StringBuilder();
         String address = request.getParameter("address");
-        if (address != null && !address.trim().isEmpty()) {
-            customer.setAddress(address);
-        }
-
-        // Handle city parameter - using address field to store city info
         String city = request.getParameter("city");
         String postalCode = request.getParameter("postalCode");
 
-        // Combine address, city, and postal code into a single address field
-        StringBuilder fullAddress = new StringBuilder();
         if (address != null && !address.trim().isEmpty()) {
             fullAddress.append(address);
         }
         if (city != null && !city.trim().isEmpty()) {
-            if (fullAddress.length() > 0) {
-                fullAddress.append(", ");
-            }
+            if (fullAddress.length() > 0) fullAddress.append(", ");
             fullAddress.append(city);
         }
         if (postalCode != null && !postalCode.trim().isEmpty()) {
-            if (fullAddress.length() > 0) {
-                fullAddress.append(" ");
-            }
+            if (fullAddress.length() > 0) fullAddress.append(" ");
             fullAddress.append(postalCode);
         }
 
-        if (fullAddress.length() > 0) {
-            customer.setAddress(fullAddress.toString());
-        }
-
-        // Set default active status
-        customer.setActive(true);
-
-        return customer;
+        return customerService.createCustomerFromRequest(
+                accountNumber, name, fullAddress.toString(), phone, email
+        );
     }
 
+    private CustomerDTO createCustomerDTOFromRequest(HttpServletRequest request) {
+        CustomerDTO customerDTO = new CustomerDTO();
+        customerDTO.setAccountNumber(request.getParameter("accountNumber"));
+        customerDTO.setName(request.getParameter("name"));
+        customerDTO.setTelephone(request.getParameter("phone"));
+        customerDTO.setAddress(request.getParameter("address"));
+        customerDTO.setEmail(request.getParameter("email"));
+        customerDTO.setPhoneNumber(request.getParameter("phone"));
+
+        String activeStr = request.getParameter("active");
+        if (activeStr != null) {
+            customerDTO.setActive(Boolean.parseBoolean(activeStr));
+        } else {
+            customerDTO.setActive(true);
+        }
+
+        return customerDTO;
+    }
+
+    private void createQuickCustomer(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+        try {
+            String customerType = request.getParameter("customerType");
+            Customer customer;
+
+            if ("premium".equals(customerType)) {
+                customer = customerService.createPremiumCustomer(
+                        request.getParameter("name"),
+                        request.getParameter("phone"),
+                        request.getParameter("email"),
+                        request.getParameter("address")
+                );
+            } else {
+                customer = customerService.createSampleCustomer(
+                        request.getParameter("name"),
+                        request.getParameter("phone"),
+                        request.getParameter("email")
+                );
+            }
+
+            customerService.save(customer);
+            response.sendRedirect(request.getContextPath() + "/customers?message=quick-customer-created");
+        } catch (Exception e) {
+            response.sendRedirect(request.getContextPath() + "/customers?error=" + e.getMessage());
+        }
+    }
 }

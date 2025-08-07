@@ -215,6 +215,9 @@
                   <a href="${pageContext.request.contextPath}/books/add" class="btn btn-primary">
                     <i class="fas fa-plus me-2"></i>Add New Book
                   </a>
+                  <a href="${pageContext.request.contextPath}/staff" class="btn btn-secondary">
+                    <i class="fas fa-users-cog me-2"></i>Staff Management
+                  </a>
                   <a href="${pageContext.request.contextPath}/customers/add" class="btn btn-success">
                     <i class="fas fa-user-plus me-2"></i>Add Customer
                   </a>

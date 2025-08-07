@@ -13,22 +13,119 @@ import com.pahanaedu.patterns.strategy.DiscountStrategy;
 import com.pahanaedu.patterns.strategy.PercentageDiscountStrategy;
 import com.pahanaedu.patterns.strategy.FixedDiscountStrategy;
 import com.pahanaedu.patterns.strategy.NoDiscountStrategy;
+import com.pahanaedu.patterns.observer.BillNotifier;
+import com.pahanaedu.patterns.observer.BillObserver;
+import com.pahanaedu.patterns.observer.BillLogger;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.time.LocalDate;
 import java.util.stream.Collectors;
 
 public class BillServiceImpl implements BillService {
     private final BillDAO billDAO;
+    private final BillNotifier billNotifier;
 
     public BillServiceImpl() {
         this.billDAO = new BillDAOImpl();
+        this.billNotifier = new BillNotifier();
+
+        // Initialize observers
+        initializeObservers();
     }
 
+    private void initializeObservers() {
+        // Add built-in logger observer
+        billNotifier.addObserver(new BillLogger());
+
+        billNotifier.addObserver(new BillEmailNotifier());
+        billNotifier.addObserver(new BillAuditObserver());
+        billNotifier.addObserver(new BillInventoryNotifier());
+    }
+
+    @Override
+    public Bill save(Bill bill) {
+        Bill savedBill = billDAO.save(bill);
+
+        // Notify observers about bill creation
+        billNotifier.notifyBillCreated(savedBill);
+
+        return savedBill;
+    }
+
+    @Override
+    public Bill saveBillWithItems(Bill bill, List<CartItem> items) {
+        // Convert cart items to bill items
+        List<BillItem> billItems = new ArrayList<>();
+        for (CartItem cartItem : items) {
+            BillItem billItem = new BillItem();
+            billItem.setIsbn(cartItem.getIsbn());
+            billItem.setBookTitle(cartItem.getTitle());
+            billItem.setQuantity(cartItem.getQuantity());
+            billItem.setUnitPrice(cartItem.getPrice());
+            billItem.setTotalPrice(cartItem.getTotal());
+            billItem.setDiscountAmount(BigDecimal.ZERO);
+            billItems.add(billItem);
+        }
+
+        bill.setBillItems(billItems);
+        Bill savedBill = billDAO.save(bill);
+
+        // Notify observers about bill creation with items
+        billNotifier.notifyBillCreated(savedBill);
+
+        return savedBill;
+    }
+
+    @Override
+    public Bill applyDiscount(Bill bill, String discountType, BigDecimal discountValue) {
+        DiscountStrategy<Bill> strategy = createDiscountStrategy(discountType, discountValue);
+        BigDecimal discountAmount = strategy.calculateDiscount(bill);
+
+        Bill updatedBill = new BillBuilder()
+                .billId(bill.getBillId())
+                .customerAccountNumber(bill.getCustomerAccountNumber())
+                .userId(bill.getUserId())
+                .billDate(bill.getBillDate())
+                .subtotal(bill.getSubtotal())
+                .taxAmount(bill.getTaxAmount())
+                .discountAmount(discountAmount)
+                .totalAmount(calculateFinalTotal(bill.getSubtotal(), bill.getTaxAmount(), discountAmount))
+                .paymentMethod(bill.getPaymentMethod())
+                .paymentStatus(bill.getPaymentStatus())
+                .notes(bill.getNotes())
+                .billItems(bill.getBillItems())
+                .build();
+
+        Bill savedBill = billDAO.save(updatedBill);
+
+        // Notify observers about bill update/discount application
+        billNotifier.notifyBillCreated(savedBill);
+
+        return savedBill;
+    }
+
+    @Override
+    public Bill applyDiscount(String billId, String discountType, BigDecimal discountValue) {
+        Optional<Bill> billOpt = findById(billId);
+        if (billOpt.isPresent()) {
+            return applyDiscount(billOpt.get(), discountType, discountValue);
+        }
+        throw new RuntimeException("Bill not found: " + billId);
+    }
+
+    // Observer management methods
+    public void addBillObserver(BillObserver observer) {
+        billNotifier.addObserver(observer);
+    }
+
+    public void removeBillObserver(BillObserver observer) {
+        billNotifier.removeObserver(observer);
+    }
+
+    // All existing methods remain unchanged
     @Override
     public List<Bill> getRecentBills(int limit) {
         List<Bill> allBills = billDAO.findAll();
@@ -56,30 +153,6 @@ public class BillServiceImpl implements BillService {
     @Override
     public List<Bill> findAll() {
         return billDAO.findAll();
-    }
-
-    @Override
-    public Bill save(Bill bill) {
-        return billDAO.save(bill);
-    }
-
-    @Override
-    public Bill saveBillWithItems(Bill bill, List<CartItem> items) {
-        // Convert cart items to bill items
-        List<BillItem> billItems = new ArrayList<>();
-        for (CartItem cartItem : items) {
-            BillItem billItem = new BillItem();
-            billItem.setIsbn(cartItem.getIsbn());
-            billItem.setBookTitle(cartItem.getTitle());
-            billItem.setQuantity(cartItem.getQuantity());
-            billItem.setUnitPrice(cartItem.getPrice());
-            billItem.setTotalPrice(cartItem.getTotal());
-            billItem.setDiscountAmount(BigDecimal.ZERO);
-            billItems.add(billItem);
-        }
-
-        bill.setBillItems(billItems);
-        return billDAO.save(bill);
     }
 
     @Override
@@ -123,42 +196,8 @@ public class BillServiceImpl implements BillService {
     @Override
     public BillDTO saveDTO(BillDTO billDTO) {
         Bill bill = BillMapper.toEntity(billDTO);
-        Bill savedBill = billDAO.save(bill);
+        Bill savedBill = save(bill); // This will trigger observers
         return BillMapper.toDTO(savedBill);
-    }
-
-    // Add to BillServiceImpl.java
-    @Override
-    public Bill applyDiscount(Bill bill, String discountType, BigDecimal discountValue) {
-        DiscountStrategy<Bill> strategy = createDiscountStrategy(discountType, discountValue);
-        BigDecimal discountAmount = strategy.calculateDiscount(bill);
-
-        // Use your existing BillBuilder to create updated bill
-        Bill updatedBill = new BillBuilder()
-                .billId(bill.getBillId())
-                .customerAccountNumber(bill.getCustomerAccountNumber())
-                .userId(bill.getUserId())
-                .billDate(bill.getBillDate())
-                .subtotal(bill.getSubtotal())
-                .taxAmount(bill.getTaxAmount())
-                .discountAmount(discountAmount)
-                .totalAmount(calculateFinalTotal(bill.getSubtotal(), bill.getTaxAmount(), discountAmount))
-                .paymentMethod(bill.getPaymentMethod())
-                .paymentStatus(bill.getPaymentStatus())
-                .notes(bill.getNotes())
-                .billItems(bill.getBillItems())
-                .build();
-
-        return billDAO.save(updatedBill);
-    }
-
-    @Override
-    public Bill applyDiscount(String billId, String discountType, BigDecimal discountValue) {
-        Optional<Bill> billOpt = findById(billId);
-        if (billOpt.isPresent()) {
-            return applyDiscount(billOpt.get(), discountType, discountValue);
-        }
-        throw new RuntimeException("Bill not found: " + billId);
     }
 
     private DiscountStrategy<Bill> createDiscountStrategy(String discountType, BigDecimal discountValue) {

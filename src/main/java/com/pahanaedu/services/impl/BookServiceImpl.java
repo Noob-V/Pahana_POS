@@ -1,4 +1,3 @@
-// src/main/java/com/pahanaedu/services/impl/BookServiceImpl.java
 package com.pahanaedu.services.impl;
 
 import com.pahanaedu.dao.BookDAO;
@@ -6,9 +5,11 @@ import com.pahanaedu.dao.impl.BookDAOImpl;
 import com.pahanaedu.entities.Book;
 import com.pahanaedu.services.BookService;
 import com.pahanaedu.services.GoogleBooksService;
-
+import com.pahanaedu.dto.BookDTO;
+import com.pahanaedu.mapper.BookMapper;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -22,6 +23,14 @@ public class BookServiceImpl implements BookService {
     }
 
     @Override
+    public List<BookDTO> findByCategoryIdDTOs(Integer categoryId) {
+        List<Book> books = bookDAO.findByCategoryId(categoryId);
+        return books.stream()
+                .map(BookMapper::toDTO)
+                .collect(Collectors.toList());
+    }
+
+    @Override
     public List<Book> findByCategoryId(Integer categoryId) {
         return bookDAO.findByCategoryId(categoryId);
     }
@@ -31,6 +40,36 @@ public class BookServiceImpl implements BookService {
             return lowStockBooks.subList(0, limit);
         }
         return lowStockBooks;
+    }
+    @Override
+    public BookDTO findBookDTOByIsbn(String isbn) {
+        Optional<Book> bookOpt = bookDAO.findByIsbn(isbn);
+        return bookOpt.map(BookMapper::toDTO).orElse(null);
+    }
+
+    @Override
+    public List<BookDTO> findAllDTOs() {
+        List<Book> books = bookDAO.findAll(); // or similar
+        return books.stream()
+                .map(BookMapper::toDTO)
+                .filter(Objects::nonNull)  // ✅ This is essential!
+                .collect(Collectors.toList());
+    }
+
+
+    @Override
+    public List<BookDTO> searchBookDTOs(String query) {
+        List<Book> books = searchBooks(query);
+        return books.stream()
+                .map(BookMapper::toDTO)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public BookDTO saveDTO(BookDTO bookDTO) {
+        Book book = BookMapper.toEntity(bookDTO);
+        Book savedBook = save(book);
+        return BookMapper.toDTO(savedBook);
     }
 
     @Override
@@ -45,7 +84,6 @@ public class BookServiceImpl implements BookService {
 
     @Override
     public List<Book> searchBooks(String query) {
-        // Search in local database first
         List<Book> localResults = new ArrayList<>();
 
         // Search by title
@@ -110,13 +148,11 @@ public class BookServiceImpl implements BookService {
 
     @Override
     public Book findOrImportByIsbn(String isbn) {
-        // First try to find in local database
         Optional<Book> localBook = bookDAO.findByIsbn(isbn);
         if (localBook.isPresent()) {
             return localBook.get();
         }
 
-        // If not found, try to import from Google Books
         Book googleBook = googleBooksService.getBookByIsbn(isbn);
         if (googleBook != null) {
             return bookDAO.save(googleBook);
