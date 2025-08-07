@@ -11,6 +11,11 @@ import com.pahanaedu.services.CustomerService;
 import com.pahanaedu.services.impl.BillServiceImpl;
 import com.pahanaedu.services.impl.BookServiceImpl;
 import com.pahanaedu.services.impl.CustomerServiceImpl;
+import com.pahanaedu.patterns.builder.BillBuilder;
+import com.pahanaedu.patterns.strategy.DiscountStrategy;
+import com.pahanaedu.patterns.strategy.PercentageDiscountStrategy;
+import com.pahanaedu.patterns.strategy.FixedDiscountStrategy;
+import com.pahanaedu.patterns.strategy.NoDiscountStrategy;
 
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
@@ -85,6 +90,9 @@ public class BillingController extends HttpServlet {
                     break;
                 case "/billing/update-quantity":
                     updateCartQuantity(request, response);
+                    break;
+                case "/billing/apply-discount":
+                    applyDiscount(request, response);
                     break;
                 case "/billing/checkout":
                     checkout(request, response);
@@ -265,38 +273,68 @@ public class BillingController extends HttpServlet {
         String paymentMethod = request.getParameter("paymentMethod");
         String notes = request.getParameter("notes");
 
-        // Calculate totals
+        // Get discount parameters
+        String discountType = request.getParameter("discountType");
+        String discountValueStr = request.getParameter("discountValue");
+
+        // Calculate subtotal
         BigDecimal subtotal = cart.stream()
                 .map(CartItem::getTotal)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
-        BigDecimal taxAmount = subtotal.multiply(new BigDecimal("0.10")); // 10% tax
-        BigDecimal totalAmount = subtotal.add(taxAmount);
 
-        // Create bill
-        Bill bill = new Bill();
-        bill.setCustomerAccountNumber(customerAccountNumber);
-        bill.setUserId(1);
-        bill.setBillDate(LocalDateTime.now());
-        bill.setSubtotal(subtotal);
-        bill.setTaxAmount(taxAmount);
-        bill.setDiscountAmount(BigDecimal.ZERO);
-        bill.setTotalAmount(totalAmount);
-        bill.setPaymentMethod(paymentMethod);
-        bill.setPaymentStatus("PAID");
-        bill.setNotes(notes);
+        // Apply discount if provided
+        BigDecimal discountAmount = BigDecimal.ZERO;
+        if (discountType != null && !"none".equals(discountType) &&
+                discountValueStr != null && !discountValueStr.isEmpty()) {
+            BigDecimal discountValue = new BigDecimal(discountValueStr);
+            DiscountStrategy<Bill> strategy = createDiscountStrategy(discountType, discountValue);
+
+            // Create temporary bill for discount calculation
+            Bill tempBill = new BillBuilder().subtotal(subtotal).build();
+            discountAmount = strategy.calculateDiscount(tempBill);
+        }
+
+        BigDecimal taxAmount = subtotal.multiply(new BigDecimal("0.10")); // 10% tax
+        BigDecimal totalAmount = subtotal.add(taxAmount).subtract(discountAmount);
+
+        // Create bill using BillBuilder
+        Bill bill = new BillBuilder()
+                .customerAccountNumber(customerAccountNumber)
+                .userId(1)
+                .billDate(LocalDateTime.now())
+                .subtotal(subtotal)
+                .taxAmount(taxAmount)
+                .discountAmount(discountAmount)
+                .totalAmount(totalAmount)
+                .paymentMethod(paymentMethod)
+                .paymentStatus("PAID")
+                .notes(notes)
+                .build();
 
         // Save bill with items
         Bill savedBill = billService.saveBillWithItems(bill, cart);
 
-        // Critical: Update inventory quantities for purchased books
+        // Update inventory quantities for purchased books
         for (CartItem item : cart) {
-            Optional<Book> bookOpt = bookService.findByIsbn(item.getIsbn());
-            if (bookOpt.isPresent()) {
-                Book book = bookOpt.get();
-                int newQuantity = book.getQuantity() - item.getQuantity();
-                // Ensure quantity doesn't go negative
-                if (newQuantity < 0) newQuantity = 0;
-                bookService.updateQuantity(item.getIsbn(), newQuantity);
+            try {
+                Optional<Book> bookOpt = bookService.findByIsbn(item.getIsbn());
+                if (bookOpt.isPresent()) {
+                    Book book = bookOpt.get();
+                    int newQuantity = book.getQuantity() - item.getQuantity();
+
+                    // Prevent negative quantities
+                    if (newQuantity < 0) {
+                        throw new RuntimeException("Insufficient inventory for book: " + book.getTitle());
+                    }
+
+                    book.setQuantity(newQuantity);
+                    bookService.save(book);
+                }
+            } catch (Exception e) {
+                // Log the specific error and continue or rollback
+                System.err.println("Error updating inventory for ISBN " + item.getIsbn() + ": " + e.getMessage());
+                // You might want to implement compensation logic here
+                throw new RuntimeException("Error updating inventory: " + e.getMessage());
             }
         }
 
@@ -316,16 +354,52 @@ public class BillingController extends HttpServlet {
         if (billOpt.isPresent()) {
             BillDTO bill = billOpt.get();
 
-            // Get customer details if available
-            if (bill.getCustomerAccountNumber() != null) {
-                Optional<Customer> customerOpt = customerService.findByAccountNumber(bill.getCustomerAccountNumber());
-                customerOpt.ifPresent(customer -> request.setAttribute("customer", customer));
+            // Get customer details if available - with proper null checking
+            if (bill.getCustomerAccountNumber() != null && !bill.getCustomerAccountNumber().trim().isEmpty()) {
+                try {
+                    Optional<Customer> customerOpt = customerService.findByAccountNumber(bill.getCustomerAccountNumber());
+                    if (customerOpt.isPresent()) {
+                        request.setAttribute("customer", customerOpt.get());
+                    } else {
+                        request.setAttribute("customerNotFound", true);
+                    }
+                } catch (Exception e) {
+                    System.err.println("Error finding customer: " + e.getMessage());
+                    request.setAttribute("customerError", "Error loading customer details");
+                }
             }
 
             request.setAttribute("bill", bill);
             request.getRequestDispatcher("/WEB-INF/views/billing/receipt.jsp").forward(request, response);
         } else {
             response.sendRedirect(request.getContextPath() + "/billing?error=receipt-not-found");
+        }
+    }
+
+    private void applyDiscount(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+        try {
+            String billId = request.getParameter("billId");
+            String discountType = request.getParameter("discountType");
+            BigDecimal discountValue = new BigDecimal(request.getParameter("discountValue"));
+
+            Bill updatedBill = billService.applyDiscount(billId, discountType, discountValue);
+
+            response.sendRedirect(request.getContextPath() + "/billing/receipt?billId=" +
+                    updatedBill.getBillId() + "&success=discount-applied");
+        } catch (Exception e) {
+            response.sendRedirect(request.getContextPath() + "/billing?error=discount-failed");
+        }
+    }
+
+    private DiscountStrategy<Bill> createDiscountStrategy(String discountType, BigDecimal discountValue) {
+        switch (discountType.toLowerCase()) {
+            case "percentage":
+                return new PercentageDiscountStrategy(discountValue.divide(new BigDecimal("100")));
+            case "fixed":
+                return new FixedDiscountStrategy(discountValue);
+            default:
+                return new NoDiscountStrategy();
         }
     }
 }
