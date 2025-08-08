@@ -1,4 +1,3 @@
-// src/main/java/com/pahanaedu/patterns/strategy/DiscountStrategy.java
 package com.pahanaedu.patterns.strategy;
 
 import java.math.BigDecimal;
