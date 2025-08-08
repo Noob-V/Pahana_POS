@@ -6,19 +6,19 @@ import java.util.List;
 
 public class BillDTO {
     private String billNumber;
-    private String billId;  // Add this
+    private String billId;
     private String customerAccountNumber;
-    private String customerName;  // Add this
-    private String userName;  // Add this
-    private Integer userId;  // Add this
-    private BigDecimal subtotal;  // Add this
-    private BigDecimal taxAmount;  // Add this
-    private BigDecimal discountAmount;  // Add this
+    private String customerName;
+    private String userName;
+    private Integer userId;
+    private BigDecimal subtotal;
+    private BigDecimal taxAmount;
+    private BigDecimal discountAmount;
     private BigDecimal totalAmount;
-    private String paymentMethod;  // Add this
-    private String paymentStatus;  // Add this
-    private String notes;  // Add this
-    private Date billDate;  // Add this
+    private String paymentMethod;
+    private String paymentStatus;
+    private String notes;
+    private Date billDate;
     private Date createdAt;
     private List<BillItemDTO> billItems;
 

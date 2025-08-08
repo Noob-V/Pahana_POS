@@ -7,15 +7,13 @@ import com.pahanaedu.entities.Bill;
 import com.pahanaedu.entities.BillItem;
 import com.pahanaedu.entities.CartItem;
 import com.pahanaedu.mapper.BillMapper;
+import com.pahanaedu.patterns.observer.*;
 import com.pahanaedu.services.BillService;
 import com.pahanaedu.patterns.builder.BillBuilder;
 import com.pahanaedu.patterns.strategy.DiscountStrategy;
 import com.pahanaedu.patterns.strategy.PercentageDiscountStrategy;
 import com.pahanaedu.patterns.strategy.FixedDiscountStrategy;
 import com.pahanaedu.patterns.strategy.NoDiscountStrategy;
-import com.pahanaedu.patterns.observer.BillNotifier;
-import com.pahanaedu.patterns.observer.BillObserver;
-import com.pahanaedu.patterns.observer.BillLogger;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
