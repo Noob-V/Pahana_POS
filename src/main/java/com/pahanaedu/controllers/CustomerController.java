@@ -11,6 +11,7 @@ import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
 import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
@@ -35,12 +36,15 @@ public class CustomerController extends HttpServlet {
 
         switch (action) {
             case "/customers/add":
+                checkStaffOrAdminAccess(request, response);
                 showAddForm(request, response);
                 break;
             case "/customers/edit":
+                checkAdminAccess(request, response);
                 showEditForm(request, response);
                 break;
             case "/customers/delete":
+                checkAdminAccess(request, response);
                 deleteCustomer(request, response);
                 break;
             case "/customers/search":
@@ -50,6 +54,7 @@ public class CustomerController extends HttpServlet {
                 showCustomerBills(request, response);
                 break;
             case "/customers/quick":
+                checkStaffOrAdminAccess(request, response);
                 showQuickCustomerForm(request, response);
                 break;
             case "/customers":
@@ -66,12 +71,15 @@ public class CustomerController extends HttpServlet {
 
         switch (action) {
             case "/customers/add":
+                checkStaffOrAdminAccess(request, response);
                 addCustomer(request, response);
                 break;
             case "/customers/edit":
+                checkAdminAccess(request, response);
                 updateCustomer(request, response);
                 break;
             case "/customers/quick":
+                checkStaffOrAdminAccess(request, response);
                 createQuickCustomer(request, response);
                 break;
             default:
@@ -85,6 +93,7 @@ public class CustomerController extends HttpServlet {
         try {
             List<CustomerDTO> customers = customerService.findAllDTOs();
             request.setAttribute("customers", customers);
+            request.setAttribute("isStaff", isStaffUser(request));
             request.getRequestDispatcher("/WEB-INF/views/customers/list.jsp").forward(request, response);
         } catch (Exception e) {
             request.setAttribute("errorMessage", "Error loading customers: " + e.getMessage());
@@ -174,10 +183,36 @@ public class CustomerController extends HttpServlet {
             throws IOException {
         try {
             String accountNumber = request.getParameter("accountNumber");
-            customerService.deleteByAccountNumber(accountNumber);
-            response.sendRedirect(request.getContextPath() + "/customers?message=customer-deleted");
+
+            if (accountNumber == null || accountNumber.trim().isEmpty()) {
+                response.sendRedirect(request.getContextPath() + "/customers?error=invalid-account-number");
+                return;
+            }
+
+            // Check if customer exists first
+            Optional<Customer> customerOpt = customerService.findByAccountNumber(accountNumber);
+            if (!customerOpt.isPresent()) {
+                response.sendRedirect(request.getContextPath() + "/customers?error=customer-not-found");
+                return;
+            }
+
+            // Remove the bill check since we're using soft delete
+            // List<Bill> customerBills = customerService.findBillsByCustomer(accountNumber);
+            // if (!customerBills.isEmpty()) {
+            //     response.sendRedirect(request.getContextPath() + "/customers?error=cannot-delete-customer-has-bills");
+            //     return;
+            // }
+
+            boolean deleted = customerService.deleteByAccountNumber(accountNumber);
+            if (deleted) {
+                response.sendRedirect(request.getContextPath() + "/customers?message=customer-deleted");
+            } else {
+                response.sendRedirect(request.getContextPath() + "/customers?error=delete-failed");
+            }
         } catch (Exception e) {
-            response.sendRedirect(request.getContextPath() + "/customers?error=" + e.getMessage());
+            System.err.println("Error deleting customer: " + e.getMessage());
+            e.printStackTrace();
+            response.sendRedirect(request.getContextPath() + "/customers?error=delete-error");
         }
     }
 
@@ -276,4 +311,45 @@ public class CustomerController extends HttpServlet {
             response.sendRedirect(request.getContextPath() + "/customers?error=" + e.getMessage());
         }
     }
+
+    private void checkAdminAccess(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+        HttpSession session = request.getSession(false);
+        if (session == null) {
+            response.sendRedirect(request.getContextPath() + "/login");
+            return;
+        }
+
+        String userRole = (String) session.getAttribute("userRole");
+        if (!"ADMIN".equals(userRole)) {
+            request.setAttribute("errorMessage", "Access denied. Admin privileges required.");
+            request.getRequestDispatcher("/WEB-INF/views/error.jsp").forward(request, response);
+            return;
+        }
+    }
+
+    private void checkStaffOrAdminAccess(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+        HttpSession session = request.getSession(false);
+        if (session == null) {
+            response.sendRedirect(request.getContextPath() + "/login");
+            return;
+        }
+
+        String userRole = (String) session.getAttribute("userRole");
+        if (!"ADMIN".equals(userRole) && !"STAFF".equals(userRole)) {
+            request.setAttribute("errorMessage", "Access denied. Staff or Admin privileges required.");
+            request.getRequestDispatcher("/WEB-INF/views/error.jsp").forward(request, response);
+            return;
+        }
+    }
+
+    private boolean isStaffUser(HttpServletRequest request) {
+        HttpSession session = request.getSession(false);
+        if (session == null) return false;
+
+        String userRole = (String) session.getAttribute("userRole");
+        return "STAFF".equals(userRole);
+    }
+
 }
