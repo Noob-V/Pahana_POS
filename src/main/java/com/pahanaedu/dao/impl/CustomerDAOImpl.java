@@ -20,7 +20,7 @@ public class CustomerDAOImpl implements CustomerDAO {
 
     @Override
     public Optional<Customer> findByAccountNumber(String accountNumber) {
-        String sql = "SELECT * FROM customers WHERE account_number = ?";
+        String sql = "SELECT * FROM customers WHERE account_number = ? AND is_active = 1";
 
         try (Connection conn = dbConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -63,7 +63,7 @@ public class CustomerDAOImpl implements CustomerDAO {
 
     @Override
     public List<Customer> findAll() {
-        String sql = "SELECT * FROM customers ORDER BY created_date DESC";
+        String sql = "SELECT * FROM customers WHERE is_active = 1 ORDER BY created_date DESC";
         List<Customer> customers = new ArrayList<>();
 
         try (Connection conn = dbConnection.getConnection();
@@ -206,15 +206,21 @@ public class CustomerDAOImpl implements CustomerDAO {
 
     @Override
     public boolean deleteByAccountNumber(String accountNumber) {
-        String sql = "DELETE FROM customers WHERE account_number = ?";
+        String sql = "UPDATE customers SET is_active = 0, updated_date = ? WHERE account_number = ?";
 
         try (Connection conn = dbConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
 
-            stmt.setString(1, accountNumber);
-            return stmt.executeUpdate() > 0;
+            stmt.setTimestamp(1, Timestamp.valueOf(LocalDateTime.now()));
+            stmt.setString(2, accountNumber);
+            int rowsAffected = stmt.executeUpdate();
+
+            System.out.println("Soft delete operation - Account: " + accountNumber + ", Rows affected: " + rowsAffected);
+
+            return rowsAffected > 0;
         } catch (SQLException e) {
-            throw new RuntimeException("Error deleting customer", e);
+            System.err.println("SQL Error soft deleting customer " + accountNumber + ": " + e.getMessage());
+            throw new RuntimeException("Error deactivating customer: " + e.getMessage(), e);
         }
     }
 
