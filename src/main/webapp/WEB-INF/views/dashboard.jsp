@@ -66,7 +66,7 @@
           Admin Panel
         </h4>
         <nav class="nav flex-column">
-          <a class="nav-link active" href="${pageContext.request.contextPath}/admin/dashboard">
+          <a class="nav-link active" href="${pageContext.request.contextPath}/dashboard">
             <i class="fas fa-home me-2"></i> Dashboard
           </a>
           <a class="nav-link" href="${pageContext.request.contextPath}/books">
@@ -92,9 +92,6 @@
               <li><a class="dropdown-item" href="${pageContext.request.contextPath}/admin/reports/customers">Customer Report</a></li>
             </ul>
           </div>
-          <a class="nav-link" href="${pageContext.request.contextPath}/admin/system/settings">
-            <i class="fas fa-cog me-2"></i> System Settings
-          </a>
           <hr class="text-white">
           <a class="nav-link" href="${pageContext.request.contextPath}/logout">
             <i class="fas fa-sign-out-alt me-2"></i> Logout
@@ -118,6 +115,15 @@
           </div>
         </div>
 
+        <!-- Error Message -->
+        <c:if test="${not empty errorMessage}">
+          <div class="alert alert-warning alert-dismissible fade show" role="alert">
+            <i class="fas fa-exclamation-triangle me-2"></i>
+              ${errorMessage}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+          </div>
+        </c:if>
+
         <!-- Statistics Cards -->
         <div class="row mb-4">
           <div class="col-xl-3 col-md-6 mb-4">
@@ -127,9 +133,9 @@
                   <i class="fas fa-dollar-sign"></i>
                 </div>
                 <div class="ms-3 flex-grow-1">
-                  <div class="fw-bold text-primary">Today's Sales</div>
-                  <div class="h4 mb-0">$<fmt:formatNumber value="${stats.todaySales}" pattern="#,##0.00"/></div>
-                  <small class="text-success"><i class="fas fa-arrow-up"></i> +12.5% from yesterday</small>
+                  <div class="fw-bold text-primary">Today's Revenue</div>
+                  <div class="h4 mb-0">$<fmt:formatNumber value="${dashboardStats.todayRevenue}" pattern="#,##0.00"/></div>
+                  <small class="text-muted">${dashboardStats.todayBills} bills today</small>
                 </div>
               </div>
             </div>
@@ -138,12 +144,12 @@
             <div class="stat-card">
               <div class="d-flex align-items-center">
                 <div class="stat-icon bg-success">
-                  <i class="fas fa-shopping-cart"></i>
+                  <i class="fas fa-calendar-month"></i>
                 </div>
                 <div class="ms-3 flex-grow-1">
-                  <div class="fw-bold text-success">Orders Today</div>
-                  <div class="h4 mb-0">${stats.ordersToday}</div>
-                  <small class="text-success"><i class="fas fa-arrow-up"></i> +8.2% from yesterday</small>
+                  <div class="fw-bold text-success">Monthly Revenue</div>
+                  <div class="h4 mb-0">$<fmt:formatNumber value="${dashboardStats.monthRevenue}" pattern="#,##0.00"/></div>
+                  <small class="text-muted">${dashboardStats.monthBills} bills this month</small>
                 </div>
               </div>
             </div>
@@ -155,9 +161,9 @@
                   <i class="fas fa-book"></i>
                 </div>
                 <div class="ms-3 flex-grow-1">
-                  <div class="fw-bold text-info">Total Books</div>
-                  <div class="h4 mb-0">${stats.totalBooks}</div>
-                  <small class="text-muted">Total Inventory: ${stats.totalInventory}</small>
+                  <div class="fw-bold text-info">Books in Stock</div>
+                  <div class="h4 mb-0"><fmt:formatNumber value="${dashboardStats.totalBooksInStock}" pattern="#,##0"/></div>
+                  <small class="text-muted">${dashboardStats.totalCustomers} active customers</small>
                 </div>
               </div>
             </div>
@@ -169,8 +175,8 @@
                   <i class="fas fa-exclamation-triangle"></i>
                 </div>
                 <div class="ms-3 flex-grow-1">
-                  <div class="fw-bold text-warning">Low Stock</div>
-                  <div class="h4 mb-0">${stats.lowStockCount}</div>
+                  <div class="fw-bold text-warning">Low Stock Alert</div>
+                  <div class="h4 mb-0">${dashboardStats.lowStockBooksCount}</div>
                   <small class="text-danger">Requires attention</small>
                 </div>
               </div>
@@ -184,7 +190,7 @@
           <div class="col-lg-8 mb-4">
             <div class="card">
               <div class="card-header d-flex justify-content-between align-items-center">
-                <h5 class="mb-0">Sales Overview (Last 7 Days)</h5>
+                <h5 class="mb-0">Weekly Revenue Overview</h5>
                 <div class="dropdown">
                   <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown">
                     Last 7 days
@@ -204,30 +210,35 @@
             </div>
           </div>
 
-          <!-- Quick Actions -->
+          <!-- Top Selling Books -->
           <div class="col-lg-4 mb-4">
             <div class="card">
               <div class="card-header">
-                <h5 class="mb-0">Quick Actions</h5>
+                <h5 class="mb-0">Top Selling Books</h5>
               </div>
-              <div class="card-body">
-                <div class="d-grid gap-2">
-                  <a href="${pageContext.request.contextPath}/books/add" class="btn btn-primary">
-                    <i class="fas fa-plus me-2"></i>Add New Book
-                  </a>
-                  <a href="${pageContext.request.contextPath}/staff" class="btn btn-secondary">
-                    <i class="fas fa-users-cog me-2"></i>Staff Management
-                  </a>
-                  <a href="${pageContext.request.contextPath}/customers/add" class="btn btn-success">
-                    <i class="fas fa-user-plus me-2"></i>Add Customer
-                  </a>
-                  <a href="${pageContext.request.contextPath}/billing/pos" class="btn btn-info">
-                    <i class="fas fa-cash-register me-2"></i>New Sale
-                  </a>
-                  <a href="${pageContext.request.contextPath}/admin/reports/inventory" class="btn btn-warning">
-                    <i class="fas fa-clipboard-list me-2"></i>Inventory Report
-                  </a>
-                </div>
+              <div class="card-body" style="max-height: 300px; overflow-y: auto;">
+                <c:choose>
+                  <c:when test="${not empty topSellingBooks}">
+                    <c:forEach var="book" items="${topSellingBooks}" varStatus="status">
+                      <div class="d-flex align-items-center mb-3 p-2 bg-light rounded">
+                        <div class="badge bg-primary rounded-circle me-3" style="width: 30px; height: 30px; display: flex; align-items: center; justify-content: center;">
+                            ${status.index + 1}
+                        </div>
+                        <div class="flex-grow-1">
+                          <div class="fw-bold small">${book.title}</div>
+                          <small class="text-muted">${book.author}</small>
+                          <div class="small text-success">$<fmt:formatNumber value="${book.price}" pattern="#,##0.00"/></div>
+                        </div>
+                      </div>
+                    </c:forEach>
+                  </c:when>
+                  <c:otherwise>
+                    <div class="text-center py-3">
+                      <i class="fas fa-chart-line fa-2x text-muted mb-2"></i>
+                      <p class="text-muted small mb-0">No sales data available</p>
+                    </div>
+                  </c:otherwise>
+                </c:choose>
               </div>
             </div>
           </div>
@@ -261,11 +272,11 @@
                         <tbody>
                         <c:forEach var="bill" items="${recentBills}">
                           <tr>
-                            <td><span class="badge bg-light text-dark">#${bill.billNumber}</span></td>
+                            <td><span class="badge bg-light text-dark">#${bill.billId}</span></td>
                             <td>${not empty bill.customerAccountNumber ? bill.customerAccountNumber : 'Walk-in'}</td>
                             <td class="fw-bold">$<fmt:formatNumber value="${bill.totalAmount}" pattern="#,##0.00"/></td>
-                            <td><fmt:formatDate value="${bill.createdAt}" pattern="MMM dd, HH:mm"/></td>
-                            <td><span class="badge bg-success">Completed</span></td>
+                            <td><fmt:formatDate value="${bill.billDate}" pattern="MMM dd, HH:mm"/></td>
+                            <td><span class="badge ${bill.paymentStatus == 'PAID' ? 'bg-success' : 'bg-warning'}">${bill.paymentStatus}</span></td>
                           </tr>
                         </c:forEach>
                         </tbody>
@@ -290,7 +301,7 @@
                 <h5 class="mb-0 text-warning">
                   <i class="fas fa-exclamation-triangle me-2"></i>Low Stock Alert
                 </h5>
-                <span class="badge bg-warning">${stats.lowStockCount}</span>
+                <span class="badge bg-warning">${dashboardStats.lowStockBooksCount}</span>
               </div>
               <div class="card-body" style="max-height: 300px; overflow-y: auto;">
                 <c:choose>
@@ -300,6 +311,7 @@
                         <div>
                           <div class="fw-bold small">${book.title}</div>
                           <small class="text-muted">${book.author}</small>
+                          <div class="small text-success">$<fmt:formatNumber value="${book.price}" pattern="#,##0.00"/></div>
                         </div>
                         <span class="badge ${book.quantity == 0 ? 'bg-danger' : 'bg-warning'}">${book.quantity}</span>
                       </div>
@@ -324,20 +336,48 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
+  // Parse weekly revenue data from server - use proper JSON parsing
+  let weeklyRevenueData;
+  try {
+    // Safely parse the JSON data
+    weeklyRevenueData = JSON.parse('${weeklyRevenueJson}');
+  } catch (e) {
+    console.error('Error parsing revenue data:', e);
+    weeklyRevenueData = {};
+  }
+
+  console.log('Revenue Data:', weeklyRevenueData); // Debug log
+
+  const chartLabels = Object.keys(weeklyRevenueData);
+  const chartData = Object.values(weeklyRevenueData).map(value => parseFloat(value) || 0);
+
+  // Check if we have data
+  if (chartLabels.length === 0) {
+    console.warn('No chart data available');
+  }
+
   // Sales Chart
   const ctx = document.getElementById('salesChart').getContext('2d');
   const salesChart = new Chart(ctx, {
     type: 'line',
     data: {
-      labels: ['6 days ago', '5 days ago', '4 days ago', '3 days ago', '2 days ago', 'Yesterday', 'Today'],
+      labels: chartLabels.map(date => {
+        // Format date labels to be more readable (e.g., "Dec 15")
+        const dateObj = new Date(date);
+        return dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      }),
       datasets: [{
-        label: 'Sales ($)',
-        data: [1200, 1900, 800, 1500, 2000, 1800, ${stats.todaySales}],
+        label: 'Daily Revenue ($)',
+        data: chartData,
         borderColor: '#3498db',
         backgroundColor: 'rgba(52, 152, 219, 0.1)',
         borderWidth: 3,
         fill: true,
-        tension: 0.4
+        tension: 0.4,
+        pointBackgroundColor: '#3498db',
+        pointBorderColor: '#fff',
+        pointBorderWidth: 2,
+        pointRadius: 5
       }]
     },
     options: {
@@ -345,7 +385,12 @@
       maintainAspectRatio: false,
       plugins: {
         legend: {
-          display: false
+          display: true,
+          position: 'top'
+        },
+        title: {
+          display: true,
+          text: 'Daily Revenue Trend (Last 7 Days)'
         }
       },
       scales: {
@@ -353,6 +398,11 @@
           beginAtZero: true,
           grid: {
             color: 'rgba(0,0,0,0.1)'
+          },
+          ticks: {
+            callback: function(value) {
+              return '$' + value.toFixed(2);
+            }
           }
         },
         x: {
