@@ -72,26 +72,23 @@
           <a class="nav-link" href="${pageContext.request.contextPath}/books">
             <i class="fas fa-book me-2"></i> Books Management
           </a>
+            <a class="nav-link" href="${pageContext.request.contextPath}/billing">
+                <i class="fas fa-receipt me-2"></i> Billing Management
           <a class="nav-link" href="${pageContext.request.contextPath}/customers">
-            <i class="fas fa-users me-2"></i> Customers
+            <i class="fas fa-users me-2"></i> Customer Management
+          </a>
+          <a class="nav-link" href="${pageContext.request.contextPath}/staff">
+            <i class="fas fa-users me-2"></i> Staff Management
           </a>
           <a class="nav-link" href="${pageContext.request.contextPath}/billing/pos">
-            <i class="fas fa-cash-register me-2"></i> Point of Sale
+            <i class="fas fa-cash-register me-2"></i> Point of Sale System
           </a>
           <a class="nav-link" href="${pageContext.request.contextPath}/admin/analytics">
             <i class="fas fa-chart-bar me-2"></i> Analytics
           </a>
-          <hr class="text-white">
-          <div class="dropdown">
-            <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
-              <i class="fas fa-chart-line me-2"></i> Reports
-            </a>
-            <ul class="dropdown-menu">
-              <li><a class="dropdown-item" href="${pageContext.request.contextPath}/admin/reports/sales">Sales Report</a></li>
-              <li><a class="dropdown-item" href="${pageContext.request.contextPath}/admin/reports/inventory">Inventory Report</a></li>
-              <li><a class="dropdown-item" href="${pageContext.request.contextPath}/admin/reports/customers">Customer Report</a></li>
-            </ul>
-          </div>
+              <a class="nav-link" href="${pageContext.request.contextPath}/help">
+                <i class="fas fa-question-circle me-2"></i> Help & Documentation
+              </a>
           <hr class="text-white">
           <a class="nav-link" href="${pageContext.request.contextPath}/logout">
             <i class="fas fa-sign-out-alt me-2"></i> Logout

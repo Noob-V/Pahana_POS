@@ -284,6 +284,16 @@
                 </div>
             </div>
         </div>
+
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card quick-action-card" onclick="window.location.href='${pageContext.request.contextPath}/help'">
+                <div class="card-body text-center">
+                    <i class="fas fa-question-circle fa-2x text-secondary mb-3"></i>
+                    <h6>Help & Support</h6>
+                    <p class="text-muted small">View system documentation</p>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- Recent Activities -->
