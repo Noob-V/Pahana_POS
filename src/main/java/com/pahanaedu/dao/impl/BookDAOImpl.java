@@ -1,4 +1,3 @@
-// src/main/java/com/pahanaedu/dao/impl/BookDAOImpl.java
 package com.pahanaedu.dao.impl;
 
 import com.pahanaedu.dao.BookDAO;

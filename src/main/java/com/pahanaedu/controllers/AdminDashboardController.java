@@ -26,7 +26,6 @@ import java.util.stream.Collectors;
 
 @WebServlet(name = "AdminDashboardController", urlPatterns = {
         "/admin/dashboard",
-        "/admin/analytics",
         "/admin/reports/*",
         "/admin/system/*"
 })
@@ -63,9 +62,6 @@ public class AdminDashboardController extends HttpServlet {
         switch (path) {
             case "/admin/dashboard":
                 showDashboard(request, response);
-                break;
-            case "/admin/analytics":
-                showAnalytics(request, response);
                 break;
             case "/admin/reports/sales":
                 generateSalesReport(request, response);
