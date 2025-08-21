@@ -49,7 +49,6 @@
               </c:choose>
             </div>
           </c:if>
-
           <c:if test="${not empty errorMessage}">
             <div class="alert alert-danger">
                 ${errorMessage}
@@ -89,11 +88,6 @@
 
           <hr class="my-4">
 
-          <div class="text-center mt-4">
-            <small class="text-muted">
-              Demo: admin/admin123 or user/user123
-            </small>
-          </div>
         </div>
       </div>
     </div>

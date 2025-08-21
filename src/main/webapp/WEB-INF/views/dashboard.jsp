@@ -1,20 +1,428 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
+<%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Dashboard - Pahana Education</title>
+  <title>Admin Dashboard - PahanaEdu</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.css">
+  <style>
+    .sidebar {
+      min-height: 100vh;
+      background: linear-gradient(180deg, #2c3e50 0%, #3498db 100%);
+    }
+    .sidebar .nav-link {
+      color: rgba(255,255,255,0.8);
+      padding: 12px 20px;
+      border-radius: 8px;
+      margin: 4px 0;
+      transition: all 0.3s;
+    }
+    .sidebar .nav-link:hover,
+    .sidebar .nav-link.active {
+      color: white;
+      background-color: rgba(255,255,255,0.1);
+    }
+    .stat-card {
+      background: white;
+      border-radius: 15px;
+      padding: 25px;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+      border: none;
+      transition: transform 0.3s;
+    }
+    .stat-card:hover {
+      transform: translateY(-5px);
+    }
+    .stat-icon {
+      width: 60px;
+      height: 60px;
+      border-radius: 15px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      color: white;
+    }
+    .chart-container {
+      position: relative;
+      height: 300px;
+    }
+  </style>
 </head>
-<body>
-<div class="container mt-5">
-  <h1>Welcome to Dashboard</h1>
-  <p>Hello, ${sessionScope.currentUser.fullName}!</p>
-  <p>Role: ${sessionScope.userRole}</p>
+<body class="bg-light">
 
-  <a href="${pageContext.request.contextPath}/logout" class="btn btn-danger">Logout</a>
+<div class="container-fluid">
+  <div class="row">
+    <!-- Sidebar -->
+    <div class="col-md-2 sidebar p-0">
+      <div class="p-3">
+        <h4 class="text-white mb-4">
+          <i class="fas fa-tachometer-alt me-2"></i>
+          Admin Panel
+        </h4>
+        <nav class="nav flex-column">
+          <a class="nav-link active" href="${pageContext.request.contextPath}/dashboard">
+            <i class="fas fa-home me-2"></i> Dashboard
+          </a>
+          <a class="nav-link" href="${pageContext.request.contextPath}/books">
+            <i class="fas fa-book me-2"></i> Books Management
+          </a>
+          <a class="nav-link" href="${pageContext.request.contextPath}/billing">
+            <i class="fas fa-receipt me-2"></i> Billing Management
+          </a>
+          <a class="nav-link" href="${pageContext.request.contextPath}/customers">
+            <i class="fas fa-users me-2"></i> Customer Management
+          </a>
+          <a class="nav-link" href="${pageContext.request.contextPath}/staff">
+            <i class="fas fa-users me-2"></i> Staff Management
+          </a>
+          <a class="nav-link" href="${pageContext.request.contextPath}/billing/pos">
+            <i class="fas fa-cash-register me-2"></i> Point of Sale System
+          </a>
+          <a class="nav-link" href="${pageContext.request.contextPath}/admin/analytics">
+            <i class="fas fa-chart-bar me-2"></i> Analytics
+          </a>
+              <a class="nav-link" href="${pageContext.request.contextPath}/help">
+                <i class="fas fa-question-circle me-2"></i> Help & Documentation
+              </a>
+          <hr class="text-white">
+          <a class="nav-link" href="${pageContext.request.contextPath}/logout">
+            <i class="fas fa-sign-out-alt me-2"></i> Logout
+          </a>
+        </nav>
+      </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="col-md-10">
+      <div class="p-4">
+        <!-- Header -->
+        <div class="d-flex justify-content-between align-items-center mb-4">
+          <div>
+            <h2>Admin Dashboard</h2>
+            <p class="text-muted mb-0">Welcome To Pahana Edu!!</p>
+          </div>
+          <div class="text-end">
+            <span class="text-muted">Last updated: </span>
+            <span class="fw-bold"><fmt:formatDate value="<%= new java.util.Date() %>" pattern="MMM dd, yyyy HH:mm"/></span>
+          </div>
+        </div>
+
+        <!-- Error Message -->
+        <c:if test="${not empty errorMessage}">
+          <div class="alert alert-warning alert-dismissible fade show" role="alert">
+            <i class="fas fa-exclamation-triangle me-2"></i>
+              ${errorMessage}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+          </div>
+        </c:if>
+        <c:if test="${param.message == 'login-success'}">
+          <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="fas fa-check-circle me-2"></i>
+            Login successful! Welcome to Pahana Education Bookshop.
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+          </div>
+        </c:if>
+
+        <!-- Statistics Cards -->
+        <div class="row mb-4">
+          <div class="col-xl-3 col-md-6 mb-4">
+            <div class="stat-card">
+              <div class="d-flex align-items-center">
+                <div class="stat-icon bg-primary">
+                  <i class="fas fa-dollar-sign"></i>
+                </div>
+                <div class="ms-3 flex-grow-1">
+                  <div class="fw-bold text-primary">Today's Revenue</div>
+                  <div class="h4 mb-0">$<fmt:formatNumber value="${dashboardStats.todayRevenue}" pattern="#,##0.00"/></div>
+                  <small class="text-muted">${dashboardStats.todayBills} bills today</small>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="col-xl-3 col-md-6 mb-4">
+            <div class="stat-card">
+              <div class="d-flex align-items-center">
+                <div class="stat-icon bg-success">
+                  <i class="fas fa-calendar-month"></i>
+                </div>
+                <div class="ms-3 flex-grow-1">
+                  <div class="fw-bold text-success">Monthly Revenue</div>
+                  <div class="h4 mb-0">$<fmt:formatNumber value="${dashboardStats.monthRevenue}" pattern="#,##0.00"/></div>
+                  <small class="text-muted">${dashboardStats.monthBills} bills this month</small>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="col-xl-3 col-md-6 mb-4">
+            <div class="stat-card">
+              <div class="d-flex align-items-center">
+                <div class="stat-icon bg-info">
+                  <i class="fas fa-book"></i>
+                </div>
+                <div class="ms-3 flex-grow-1">
+                  <div class="fw-bold text-info">Books in Stock</div>
+                  <div class="h4 mb-0"><fmt:formatNumber value="${dashboardStats.totalBooksInStock}" pattern="#,##0"/></div>
+                  <small class="text-muted">${dashboardStats.totalCustomers} active customers</small>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="col-xl-3 col-md-6 mb-4">
+            <div class="stat-card">
+              <div class="d-flex align-items-center">
+                <div class="stat-icon bg-warning">
+                  <i class="fas fa-exclamation-triangle"></i>
+                </div>
+                <div class="ms-3 flex-grow-1">
+                  <div class="fw-bold text-warning">Low Stock Alert</div>
+                  <div class="h4 mb-0">${dashboardStats.lowStockBooksCount}</div>
+                  <small class="text-danger">Requires attention</small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Charts and Tables Row -->
+        <div class="row">
+          <!-- Sales Chart -->
+          <div class="col-lg-8 mb-4">
+            <div class="card">
+              <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Weekly Revenue Overview</h5>
+                <div class="dropdown">
+                  <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                    Last 7 days
+                  </button>
+                  <ul class="dropdown-menu">
+                    <li><a class="dropdown-item" href="#">Last 7 days</a></li>
+                    <li><a class="dropdown-item" href="#">Last 30 days</a></li>
+                    <li><a class="dropdown-item" href="#">Last 3 months</a></li>
+                  </ul>
+                </div>
+              </div>
+              <div class="card-body">
+                <div class="chart-container">
+                  <canvas id="salesChart"></canvas>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Top Selling Books -->
+          <div class="col-lg-4 mb-4">
+            <div class="card">
+              <div class="card-header">
+                <h5 class="mb-0">Top Selling Books</h5>
+              </div>
+              <div class="card-body" style="max-height: 300px; overflow-y: auto;">
+                <c:choose>
+                  <c:when test="${not empty topSellingBooks}">
+                    <c:forEach var="book" items="${topSellingBooks}" varStatus="status">
+                      <div class="d-flex align-items-center mb-3 p-2 bg-light rounded">
+                        <div class="badge bg-primary rounded-circle me-3" style="width: 30px; height: 30px; display: flex; align-items: center; justify-content: center;">
+                            ${status.index + 1}
+                        </div>
+                        <div class="flex-grow-1">
+                          <div class="fw-bold small">${book.title}</div>
+                          <small class="text-muted">${book.author}</small>
+                          <div class="small text-success">$<fmt:formatNumber value="${book.price}" pattern="#,##0.00"/></div>
+                        </div>
+                      </div>
+                    </c:forEach>
+                  </c:when>
+                  <c:otherwise>
+                    <div class="text-center py-3">
+                      <i class="fas fa-chart-line fa-2x text-muted mb-2"></i>
+                      <p class="text-muted small mb-0">No sales data available</p>
+                    </div>
+                  </c:otherwise>
+                </c:choose>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Recent Activity and Low Stock -->
+        <div class="row">
+          <!-- Recent Sales -->
+          <div class="col-lg-8 mb-4">
+            <div class="card">
+              <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Recent Sales</h5>
+                <a href="${pageContext.request.contextPath}/admin/reports/sales" class="btn btn-outline-primary btn-sm">
+                  View All
+                </a>
+              </div>
+              <div class="card-body">
+                <c:choose>
+                  <c:when test="${not empty recentBills}">
+                    <div class="table-responsive">
+                      <table class="table table-hover">
+                        <thead>
+                        <tr>
+                          <th>Bill #</th>
+                          <th>Customer</th>
+                          <th>Amount</th>
+                          <th>Date</th>
+                          <th>Status</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <c:forEach var="bill" items="${recentBills}">
+                          <tr>
+                            <td><span class="badge bg-light text-dark">#${bill.billId}</span></td>
+                            <td>${not empty bill.customerAccountNumber ? bill.customerAccountNumber : 'Walk-in'}</td>
+                            <td class="fw-bold">$<fmt:formatNumber value="${bill.totalAmount}" pattern="#,##0.00"/></td>
+                            <td><fmt:formatDate value="${bill.billDate}" pattern="MMM dd, HH:mm"/></td>
+                            <td><span class="badge ${bill.paymentStatus == 'PAID' ? 'bg-success' : 'bg-warning'}">${bill.paymentStatus}</span></td>
+                          </tr>
+                        </c:forEach>
+                        </tbody>
+                      </table>
+                    </div>
+                  </c:when>
+                  <c:otherwise>
+                    <div class="text-center py-4">
+                      <i class="fas fa-receipt fa-3x text-muted mb-3"></i>
+                      <p class="text-muted">No recent sales found</p>
+                    </div>
+                  </c:otherwise>
+                </c:choose>
+              </div>
+            </div>
+          </div>
+
+          <!-- Low Stock Alert -->
+          <div class="col-lg-4 mb-4">
+            <div class="card">
+              <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0 text-warning">
+                  <i class="fas fa-exclamation-triangle me-2"></i>Low Stock Alert
+                </h5>
+                <span class="badge bg-warning">${dashboardStats.lowStockBooksCount}</span>
+              </div>
+              <div class="card-body" style="max-height: 300px; overflow-y: auto;">
+                <c:choose>
+                  <c:when test="${not empty lowStockBooks}">
+                    <c:forEach var="book" items="${lowStockBooks}">
+                      <div class="d-flex justify-content-between align-items-center mb-3 p-2 bg-light rounded">
+                        <div>
+                          <div class="fw-bold small">${book.title}</div>
+                          <small class="text-muted">${book.author}</small>
+                          <div class="small text-success">$<fmt:formatNumber value="${book.price}" pattern="#,##0.00"/></div>
+                        </div>
+                        <span class="badge ${book.quantity == 0 ? 'bg-danger' : 'bg-warning'}">${book.quantity}</span>
+                      </div>
+                    </c:forEach>
+                  </c:when>
+                  <c:otherwise>
+                    <div class="text-center py-3">
+                      <i class="fas fa-check-circle fa-2x text-success mb-2"></i>
+                      <p class="text-muted small mb-0">All books are well stocked!</p>
+                    </div>
+                  </c:otherwise>
+                </c:choose>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+  // Parse weekly revenue data from server - use proper JSON parsing
+  let weeklyRevenueData;
+  try {
+    // Safely parse the JSON data
+    weeklyRevenueData = JSON.parse('${weeklyRevenueJson}');
+  } catch (e) {
+    console.error('Error parsing revenue data:', e);
+    weeklyRevenueData = {};
+  }
+
+  console.log('Revenue Data:', weeklyRevenueData); // Debug log
+
+  const chartLabels = Object.keys(weeklyRevenueData);
+  const chartData = Object.values(weeklyRevenueData).map(value => parseFloat(value) || 0);
+
+  // Check if we have data
+  if (chartLabels.length === 0) {
+    console.warn('No chart data available');
+  }
+
+  // Sales Chart
+  const ctx = document.getElementById('salesChart').getContext('2d');
+  const salesChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: chartLabels.map(date => {
+        // Format date labels to be more readable (e.g., "Dec 15")
+        const dateObj = new Date(date);
+        return dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      }),
+      datasets: [{
+        label: 'Daily Revenue ($)',
+        data: chartData,
+        borderColor: '#3498db',
+        backgroundColor: 'rgba(52, 152, 219, 0.1)',
+        borderWidth: 3,
+        fill: true,
+        tension: 0.4,
+        pointBackgroundColor: '#3498db',
+        pointBorderColor: '#fff',
+        pointBorderWidth: 2,
+        pointRadius: 5
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          display: true,
+          position: 'top'
+        },
+        title: {
+          display: true,
+          text: 'Daily Revenue Trend (Last 7 Days)'
+        }
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          grid: {
+            color: 'rgba(0,0,0,0.1)'
+          },
+          ticks: {
+            callback: function(value) {
+              return '$' + value.toFixed(2);
+            }
+          }
+        },
+        x: {
+          grid: {
+            display: false
+          }
+        }
+      }
+    }
+  });
+
+  // Auto refresh data every 5 minutes
+  setInterval(function() {
+    location.reload();
+  }, 300000);
+</script>
 </body>
 </html>

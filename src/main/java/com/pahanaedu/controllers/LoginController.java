@@ -1,4 +1,3 @@
-// src/main/java/com/pahanaedu/controllers/LoginController.java
 package com.pahanaedu.controllers;
 
 import com.pahanaedu.entities.User;
@@ -65,7 +64,7 @@ public class LoginController extends HttpServlet {
                 session.setAttribute("userRole", user.getRole());
                 session.setMaxInactiveInterval(30 * 60); // 30 minutes
 
-                response.sendRedirect(request.getContextPath() + "/dashboard");
+                response.sendRedirect(request.getContextPath() + "/dashboard?message=login-success");
             } else {
                 request.setAttribute("errorMessage", "Invalid username or password");
                 request.getRequestDispatcher("/WEB-INF/views/login.jsp").forward(request, response);

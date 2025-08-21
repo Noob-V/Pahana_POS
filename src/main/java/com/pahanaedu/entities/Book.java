@@ -7,6 +7,7 @@ import java.time.LocalDateTime;
 public class Book {
     private String isbn;
     private String title;
+    private String imageUrl;
     private String author;
     private String publisher;
     private String description;
@@ -38,6 +39,9 @@ public class Book {
     // Getters and Setters
     public String getIsbn() { return isbn; }
     public void setIsbn(String isbn) { this.isbn = isbn; }
+
+    public String getImageUrl() { return imageUrl; }
+    public void setImageUrl(String imageUrl) { this.imageUrl = imageUrl; }
 
     public String getTitle() { return title; }
     public void setTitle(String title) { this.title = title; }

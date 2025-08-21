@@ -13,6 +13,7 @@ public interface BillDAO {
     List<Bill> findByCustomerAccountNumber(String accountNumber);
     List<Bill> findByDateRange(LocalDate startDate, LocalDate endDate);
     List<Bill> findByUserId(Integer userId);
+    List<Bill> findByDate(LocalDate date);
     Bill save(Bill bill);
     boolean deleteById(String billId);
     String generateNextBillId();

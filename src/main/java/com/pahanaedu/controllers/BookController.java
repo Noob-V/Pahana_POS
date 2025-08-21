@@ -1,12 +1,13 @@
-// src/main/java/com/pahanaedu/controllers/BookController.java
 package com.pahanaedu.controllers;
 
+import com.pahanaedu.dto.BookDTO;
 import com.pahanaedu.entities.Book;
 import com.pahanaedu.entities.Category;
 import com.pahanaedu.services.BookService;
 import com.pahanaedu.services.CategoryService;
 import com.pahanaedu.services.impl.BookServiceImpl;
 import com.pahanaedu.services.impl.CategoryServiceImpl;
+import java.util.stream.Collectors;
 
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
@@ -20,8 +21,10 @@ import java.util.Optional;
 
 @WebServlet(name = "BookController", urlPatterns = {
         "/books", "/books/add", "/books/edit", "/books/delete",
-        "/books/search", "/books/import", "/books/google-search"
+        "/books/search", "/books/filter", "/books/import",
+        "/books/google-search", "/books/suggestions"
 })
+
 public class BookController extends HttpServlet {
     private BookService bookService;
     private CategoryService categoryService;
@@ -51,8 +54,14 @@ public class BookController extends HttpServlet {
             case "/books/search":
                 searchBooks(request, response);
                 break;
+            case "/books/filter":
+                filterBooks(request, response);
+                break;
             case "/books/google-search":
                 searchGoogleBooks(request, response);
+                break;
+            case "/books/suggestions":
+                getSuggestions(request, response);
                 break;
             case "/books":
             default:
@@ -82,14 +91,18 @@ public class BookController extends HttpServlet {
         }
     }
 
+
+
     private void listBooks(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         try {
-            List<Book> books = bookService.findAll();
+            List<BookDTO> books = bookService.findAllDTOs();
             List<Book> lowStockBooks = bookService.findLowStockBooks();
+            List<Category> categories = categoryService.findActive();
 
             request.setAttribute("books", books);
             request.setAttribute("lowStockBooks", lowStockBooks);
+            request.setAttribute("categories", categories);
             request.getRequestDispatcher("/WEB-INF/views/books/list.jsp").forward(request, response);
         } catch (Exception e) {
             request.setAttribute("errorMessage", "Error loading books: " + e.getMessage());
@@ -111,31 +124,34 @@ public class BookController extends HttpServlet {
 
     private void showEditForm(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
+        String isbn = request.getParameter("isbn");
+        if (isbn == null || isbn.trim().isEmpty()) {
+            response.sendRedirect(request.getContextPath() + "/books?error=invalid-isbn");
+            return;
+        }
+
         try {
-            String isbn = request.getParameter("isbn");
             Optional<Book> bookOpt = bookService.findByIsbn(isbn);
-
             if (bookOpt.isPresent()) {
-                Book book = bookOpt.get();
-                List<Category> categories = categoryService.findActive();
+                request.setAttribute("book", bookOpt.get());
 
-                request.setAttribute("book", book);
+                List<Category> categories = categoryService.findActive();
                 request.setAttribute("categories", categories);
+
                 request.getRequestDispatcher("/WEB-INF/views/books/edit.jsp").forward(request, response);
             } else {
                 response.sendRedirect(request.getContextPath() + "/books?error=book-not-found");
             }
         } catch (Exception e) {
-            request.setAttribute("errorMessage", "Error loading book: " + e.getMessage());
-            request.getRequestDispatcher("/WEB-INF/views/error.jsp").forward(request, response);
+            response.sendRedirect(request.getContextPath() + "/books?error=load-failed");
         }
     }
 
     private void addBook(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         try {
-            Book book = createBookFromRequest(request);
-            bookService.save(book);
+            BookDTO bookDTO = createBookDTOFromRequest(request);
+            bookService.saveDTO(bookDTO);
 
             response.sendRedirect(request.getContextPath() + "/books?message=book-added");
         } catch (Exception e) {
@@ -173,7 +189,7 @@ public class BookController extends HttpServlet {
             throws ServletException, IOException {
         try {
             String query = request.getParameter("q");
-            List<Book> books = bookService.searchBooks(query);
+            List<BookDTO> books = bookService.searchBookDTOs(query);
 
             request.setAttribute("books", books);
             request.setAttribute("searchQuery", query);
@@ -181,6 +197,33 @@ public class BookController extends HttpServlet {
         } catch (Exception e) {
             request.setAttribute("errorMessage", "Error searching books: " + e.getMessage());
             listBooks(request, response);
+        }
+    }
+
+    private void filterBooks(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+        try {
+            String categoryIdStr = request.getParameter("categoryId");
+            List<BookDTO> books;
+            List<Category> categories = categoryService.findActive();
+
+            if (categoryIdStr != null && !categoryIdStr.trim().isEmpty()) {
+                Integer categoryId = Integer.parseInt(categoryIdStr);
+                books = bookService.findByCategoryIdDTOs(categoryId); // Use new DTO method
+                request.setAttribute("selectedCategoryId", categoryId);
+            } else {
+                books = bookService.findAllDTOs();
+            }
+
+            List<Book> lowStockBooks = bookService.findLowStockBooks();
+
+            request.setAttribute("books", books);
+            request.setAttribute("lowStockBooks", lowStockBooks);
+            request.setAttribute("categories", categories);
+            request.getRequestDispatcher("/WEB-INF/views/books/list.jsp").forward(request, response);
+        } catch (Exception e) {
+            request.setAttribute("errorMessage", "Error filtering books: " + e.getMessage());
+            request.getRequestDispatcher("/WEB-INF/views/error.jsp").forward(request, response);
         }
     }
 
@@ -197,7 +240,11 @@ public class BookController extends HttpServlet {
             // Call Google Books API service
             List<Book> googleBooks = bookService.searchGoogleBooks(query, Integer.parseInt(maxResults));
 
+            // Add categories for import form
+            List<Category> categories = categoryService.findActive();
+
             request.setAttribute("googleBooks", googleBooks);
+            request.setAttribute("categories", categories);  // Add this line
             request.setAttribute("searchQuery", query);
             request.getRequestDispatcher("/WEB-INF/views/books/google-search.jsp").forward(request, response);
         } catch (Exception e) {
@@ -250,6 +297,45 @@ public class BookController extends HttpServlet {
         }
     }
 
+    private void getSuggestions(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+        response.setContentType("application/json");
+        response.setCharacterEncoding("UTF-8");
+
+        try {
+            String query = request.getParameter("q");
+            List<Book> suggestions = bookService.searchBooks(query);
+
+            // Limit to 5 suggestions
+            List<Book> limitedSuggestions = suggestions.stream()
+                    .limit(5)
+                    .collect(Collectors.toList());
+
+            StringBuilder json = new StringBuilder();
+            json.append("[");
+
+            for (int i = 0; i < limitedSuggestions.size(); i++) {
+                Book book = limitedSuggestions.get(i);
+                if (i > 0) json.append(",");
+                json.append("{")
+                        .append("\"title\":\"").append(escapeJson(book.getTitle())).append("\",")
+                        .append("\"author\":\"").append(escapeJson(book.getAuthor())).append("\"")
+                        .append("}");
+            }
+
+            json.append("]");
+
+            response.getWriter().write(json.toString());
+        } catch (Exception e) {
+            response.getWriter().write("[]");
+        }
+    }
+
+    private String escapeJson(String str) {
+        if (str == null) return "";
+        return str.replace("\"", "\\\"").replace("\n", "\\n").replace("\r", "\\r");
+    }
+
     private Book createBookFromRequest(HttpServletRequest request) {
         Book book = new Book();
         book.setIsbn(request.getParameter("isbn"));
@@ -264,6 +350,12 @@ public class BookController extends HttpServlet {
             book.setPrice(new BigDecimal(priceStr));
         } else {
             book.setPrice(BigDecimal.ZERO);
+        }
+
+        // Handle image URL
+        String imageUrl = request.getParameter("imageUrl");
+        if (imageUrl != null && !imageUrl.trim().isEmpty()) {
+            book.setImageUrl(imageUrl.trim());
         }
 
         // Handle quantity parameter
@@ -297,5 +389,53 @@ public class BookController extends HttpServlet {
         }
 
         return book;
+    }
+    private BookDTO createBookDTOFromRequest(HttpServletRequest request) {
+        BookDTO bookDTO = new BookDTO();
+        bookDTO.setIsbn(request.getParameter("isbn"));
+        bookDTO.setTitle(request.getParameter("title"));
+        bookDTO.setAuthor(request.getParameter("author"));
+        bookDTO.setPublisher(request.getParameter("publisher"));
+        bookDTO.setDescription(request.getParameter("description"));
+
+        // Handle imageUrl parameter
+        String imageUrl = request.getParameter("imageUrl");
+        if (imageUrl != null && !imageUrl.trim().isEmpty()) {
+            bookDTO.setImageUrl(imageUrl.trim());
+        }
+
+        // Handle price parameter
+        String priceStr = request.getParameter("price");
+        if (priceStr != null && !priceStr.trim().isEmpty()) {
+            bookDTO.setPrice(new BigDecimal(priceStr));
+        } else {
+            bookDTO.setPrice(BigDecimal.ZERO);
+        }
+
+        // Handle quantity parameter
+        String quantityStr = request.getParameter("quantity");
+        if (quantityStr != null && !quantityStr.trim().isEmpty()) {
+            bookDTO.setQuantity(Integer.parseInt(quantityStr));
+        } else {
+            bookDTO.setQuantity(0);
+        }
+
+        // Handle minStockLevel parameter
+        String minStockStr = request.getParameter("minStockLevel");
+        if (minStockStr != null && !minStockStr.trim().isEmpty()) {
+            bookDTO.setMinStockLevel(Integer.parseInt(minStockStr));
+        } else {
+            bookDTO.setMinStockLevel(5);
+        }
+
+        // Handle active parameter
+        String activeStr = request.getParameter("active");
+        if (activeStr != null) {
+            bookDTO.setActive(Boolean.parseBoolean(activeStr));
+        } else {
+            bookDTO.setActive(true);
+        }
+
+        return bookDTO;
     }
 }

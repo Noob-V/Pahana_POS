@@ -34,14 +34,12 @@ public class DatabaseConnection {
             String dbUsername = dotenv.get("DB_USERNAME");
             String dbPassword = dotenv.get("DB_PASSWORD", "");
 
-            // Fix the truncated URL issue
+
             if (dbUrl == null || dbUrl.trim().isEmpty() || !dbUrl.contains("databaseName=")) {
-                // Use fallback connection string since dotenv is truncating at semicolon
                 dbUrl = "jdbc:sqlserver://localhost\\SQLEXPRESS:1433;databaseName=PahanaEdu;trustServerCertificate=true;encrypt=false";
                 System.out.println("Using fallback DB_URL due to parsing issue");
             }
 
-            // Debug output to verify values are loaded
             System.out.println("DEBUG - Current working directory: " + System.getProperty("user.dir"));
             System.out.println("DEBUG - DB_URL: '" + dbUrl + "'");
             System.out.println("DEBUG - DB_USERNAME: '" + dbUsername + "'");
@@ -56,7 +54,6 @@ public class DatabaseConnection {
                 throw new RuntimeException("DB_USERNAME is missing or empty. Check your .env file at: C:/Users/ASUS TUF/IdeaProjects/PahanaEdu-POS/.env");
             }
 
-            // Load the database driver
             Class.forName(dbDriver);
 
             // Configure HikariCP
@@ -68,13 +65,13 @@ public class DatabaseConnection {
             // Connection pool settings
             config.setMaximumPoolSize(20);
             config.setMinimumIdle(5);
-            config.setConnectionTimeout(30000);  // 30 seconds
-            config.setIdleTimeout(600000);       // 10 minutes
-            config.setMaxLifetime(1800000);      // 30 minutes
+            config.setConnectionTimeout(30000);
+            config.setIdleTimeout(600000);
+            config.setMaxLifetime(1800000);
 
             // Connection validation
             config.setConnectionTestQuery("SELECT 1");
-            config.setLeakDetectionThreshold(60000); // 1 minute
+            config.setLeakDetectionThreshold(60000);
 
             // Create the data source
             this.dataSource = new HikariDataSource(config);

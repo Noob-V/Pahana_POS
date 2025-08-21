@@ -1,4 +1,3 @@
-// src/main/java/com/pahanaedu/dao/impl/BillDAOImpl.java
 package com.pahanaedu.dao.impl;
 
 import com.pahanaedu.dao.BillDAO;
@@ -8,11 +7,10 @@ import com.pahanaedu.utils.Constants;
 
 import java.math.BigDecimal;
 import java.sql.*;
+import java.sql.Date;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 public class BillDAOImpl implements BillDAO {
     private final DatabaseConnection dbConnection;
@@ -369,5 +367,32 @@ public class BillDAOImpl implements BillDAO {
         billItem.setDiscountAmount(rs.getBigDecimal("discount_amount"));
 
         return billItem;
+    }
+
+    @Override
+    public List<Bill> findByDate(LocalDate date) {
+        String sql = "SELECT b.*, c.name as customer_name, u.full_name as user_name " +
+                "FROM bills b " +
+                "LEFT JOIN customers c ON b.customer_account_number = c.account_number " +
+                "LEFT JOIN users u ON b.user_id = u.id " +
+                "WHERE CAST(b.bill_date AS DATE) = ? " +
+                "ORDER BY b.bill_date DESC";
+        List<Bill> bills = new ArrayList<>();
+
+        try (Connection conn = dbConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setDate(1, java.sql.Date.valueOf(date));
+
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    bills.add(mapResultSetToBill(rs));
+                }
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException("Error finding bills by date", e);
+        }
+
+        return bills;
     }
 }

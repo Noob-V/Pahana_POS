@@ -1,4 +1,3 @@
-// src/main/java/com/pahanaedu/entities/Bill.java
 package com.pahanaedu.entities;
 
 import java.math.BigDecimal;
@@ -20,7 +19,6 @@ public class Bill {
     private String notes;
     private LocalDateTime createdDate;
 
-    // Additional fields for display
     private String customerName;
     private String userName;
     private List<BillItem> billItems;
@@ -32,6 +30,11 @@ public class Bill {
         this.paymentStatus = "PAID";
         this.billDate = LocalDateTime.now();
         this.createdDate = LocalDateTime.now();
+    }
+
+    public java.util.Date getBillDateAsDate() {
+        return billDate != null ?
+                java.util.Date.from(billDate.atZone(java.time.ZoneId.systemDefault()).toInstant()) : null;
     }
 
     // Getters and Setters

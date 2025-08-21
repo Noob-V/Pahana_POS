@@ -1,8 +1,21 @@
 package com.pahanaedu.controllers;
 
-import com.pahanaedu.entities.*;
-import com.pahanaedu.services.*;
-import com.pahanaedu.services.impl.*;
+import com.pahanaedu.dto.BillDTO;
+import com.pahanaedu.entities.Bill;
+import com.pahanaedu.entities.Book;
+import com.pahanaedu.entities.CartItem;
+import com.pahanaedu.entities.Customer;
+import com.pahanaedu.services.BillService;
+import com.pahanaedu.services.BookService;
+import com.pahanaedu.services.CustomerService;
+import com.pahanaedu.services.impl.BillServiceImpl;
+import com.pahanaedu.services.impl.BookServiceImpl;
+import com.pahanaedu.services.impl.CustomerServiceImpl;
+import com.pahanaedu.patterns.builder.BillBuilder;
+import com.pahanaedu.patterns.strategy.DiscountStrategy;
+import com.pahanaedu.patterns.strategy.PercentageDiscountStrategy;
+import com.pahanaedu.patterns.strategy.FixedDiscountStrategy;
+import com.pahanaedu.patterns.strategy.NoDiscountStrategy;
 
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
@@ -18,8 +31,9 @@ import java.util.List;
 import java.util.Optional;
 
 @WebServlet(name = "BillingController", urlPatterns = {
-        "/billing", "/billing/new", "/billing/add-item", "/billing/remove-item",
-        "/billing/checkout", "/billing/receipt"
+        "/billing", "/billing/new", "/billing/pos", "/billing/add-item",
+        "/billing/remove-item", "/billing/update-quantity", "/billing/checkout",
+        "/billing/receipt"
 })
 public class BillingController extends HttpServlet {
     private BillService billService;
@@ -39,20 +53,28 @@ public class BillingController extends HttpServlet {
             throws ServletException, IOException {
         String action = request.getServletPath();
 
-        switch (action) {
-            case "/billing/new":
-                startNewBill(request, response);
-                break;
-            case "/billing/remove-item":
-                removeItem(request, response);
-                break;
-            case "/billing/receipt":
-                showReceipt(request, response);
-                break;
-            case "/billing":
-            default:
-                showPOS(request, response);
-                break;
+        try {
+            switch (action) {
+                case "/billing/new":
+                    showPOS(request, response);
+                    break;
+                case "/billing/pos":
+                    showPOS(request, response);
+                    break;
+                case "/billing/remove-item":
+                    removeFromCart(request, response);
+                    break;
+                case "/billing/receipt":
+                    showReceipt(request, response);
+                    break;
+                case "/billing":
+                default:
+                    listBills(request, response);
+                    break;
+            }
+        } catch (Exception e) {
+            request.setAttribute("errorMessage", "Error processing request: " + e.getMessage());
+            request.getRequestDispatcher("/WEB-INF/views/error.jsp").forward(request, response);
         }
     }
 
@@ -61,185 +83,323 @@ public class BillingController extends HttpServlet {
             throws ServletException, IOException {
         String action = request.getServletPath();
 
-        switch (action) {
-            case "/billing/add-item":
-                addItemToCart(request, response);
-                break;
-            case "/billing/checkout":
-                processCheckout(request, response);
-                break;
-            default:
-                showPOS(request, response);
-                break;
+        try {
+            switch (action) {
+                case "/billing/add-item":
+                    addToCart(request, response);
+                    break;
+                case "/billing/update-quantity":
+                    updateCartQuantity(request, response);
+                    break;
+                case "/billing/apply-discount":
+                    applyDiscount(request, response);
+                    break;
+                case "/billing/checkout":
+                    checkout(request, response);
+                    break;
+                default:
+                    response.sendRedirect(request.getContextPath() + "/billing");
+                    break;
+            }
+        } catch (Exception e) {
+            request.setAttribute("errorMessage", "Error processing request: " + e.getMessage());
+            request.getRequestDispatcher("/WEB-INF/views/error.jsp").forward(request, response);
         }
+    }
+
+    private void listBills(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+        // Replace with DTO version
+        List<BillDTO> bills = billService.findAllDTOs();
+        request.setAttribute("bills", bills);
+        request.getRequestDispatcher("/WEB-INF/views/billing/list.jsp").forward(request, response);
     }
 
     private void showPOS(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        try {
-            HttpSession session = request.getSession();
-            @SuppressWarnings("unchecked")
-            List<CartItem> cart = (List<CartItem>) session.getAttribute("cart");
+        // Clear cart if requested
+        HttpSession session = request.getSession();
+        if (request.getParameter("clear") != null) {
+            session.removeAttribute("cart");
+        }
 
-            if (cart == null) {
-                cart = new ArrayList<>();
-                session.setAttribute("cart", cart);
+        List<Book> books = bookService.findAll();
+        request.setAttribute("books", books);
+
+        // Calculate cart total
+        List<CartItem> cart = (List<CartItem>) session.getAttribute("cart");
+        if (cart != null) {
+            BigDecimal cartTotal = cart.stream()
+                    .map(CartItem::getTotal)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+            request.setAttribute("cartTotal", cartTotal);
+        }
+
+        request.getRequestDispatcher("/WEB-INF/views/billing/pos.jsp").forward(request, response);
+    }
+
+    private void addToCart(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+        String isbn = request.getParameter("isbn");
+        int requestedQuantity = Integer.parseInt(request.getParameter("quantity"));
+
+        Optional<Book> bookOpt = bookService.findByIsbn(isbn);
+        if (bookOpt.isPresent()) {
+            Book book = bookOpt.get();
+
+            // Check if book is active and has any stock
+            if (!book.isActive() || book.getQuantity() <= 0) {
+                response.sendRedirect(request.getContextPath() + "/billing/pos?error=out-of-stock&isbn=" + isbn);
+                return;
             }
 
-            // Get available books
-            List<Book> books = bookService.findAll();
-            BigDecimal total = calculateCartTotal(cart);
+            HttpSession session = request.getSession();
+            List<CartItem> cart = (List<CartItem>) session.getAttribute("cart");
+            if (cart == null) {
+                cart = new ArrayList<>();
+            }
 
-            request.setAttribute("books", books);
-            request.setAttribute("cartTotal", total);
-            request.getRequestDispatcher("/WEB-INF/views/billing/pos.jsp").forward(request, response);
-        } catch (Exception e) {
-            request.setAttribute("error", "Error loading POS: " + e.getMessage());
-            request.getRequestDispatcher("/WEB-INF/views/billing/pos.jsp").forward(request, response);
+            // Check current quantity in cart for this book
+            int currentCartQuantity = cart.stream()
+                    .filter(item -> item.getIsbn().equals(isbn))
+                    .mapToInt(CartItem::getQuantity)
+                    .sum();
+
+            // Calculate total requested quantity (current in cart + new request)
+            int totalRequestedQuantity = currentCartQuantity + requestedQuantity;
+
+            // CRITICAL CHECK: Validate against actual inventory
+            if (totalRequestedQuantity > book.getQuantity()) {
+                String errorMsg = String.format("Cannot add %d items. Only %d available in stock (you already have %d in cart)",
+                        requestedQuantity, book.getQuantity(), currentCartQuantity);
+                response.sendRedirect(request.getContextPath() + "/billing/pos?error=insufficient-stock&message=" +
+                        java.net.URLEncoder.encode(errorMsg, "UTF-8"));
+                return;
+            }
+
+            // Find existing item in cart or create new one
+            Optional<CartItem> existingItem = cart.stream()
+                    .filter(item -> item.getIsbn().equals(isbn))
+                    .findFirst();
+
+            if (existingItem.isPresent()) {
+                // Update existing item quantity
+                existingItem.get().setQuantity(totalRequestedQuantity);
+            } else {
+                // Add new item to cart
+                CartItem newItem = new CartItem(isbn, book.getTitle(), book.getAuthor(),
+                        book.getPrice(), requestedQuantity);
+                cart.add(newItem);
+            }
+
+            session.setAttribute("cart", cart);
+            response.sendRedirect(request.getContextPath() + "/billing/pos?success=item-added");
+        } else {
+            response.sendRedirect(request.getContextPath() + "/billing/pos?error=book-not-found");
         }
     }
 
-    private void addItemToCart(HttpServletRequest request, HttpServletResponse response)
-            throws ServletException, IOException {
-        try {
-            HttpSession session = request.getSession();
-            @SuppressWarnings("unchecked")
-            List<CartItem> cart = (List<CartItem>) session.getAttribute("cart");
+    private void removeFromCart(HttpServletRequest request, HttpServletResponse response)
+            throws IOException {
+        String isbn = request.getParameter("isbn");
+        HttpSession session = request.getSession();
+        List<CartItem> cart = (List<CartItem>) session.getAttribute("cart");
 
-            if (cart == null) {
-                cart = new ArrayList<>();
+        if (cart != null) {
+            cart.removeIf(item -> item.getIsbn().equals(isbn));
+            session.setAttribute("cart", cart);
+        }
+
+        response.sendRedirect(request.getContextPath() + "/billing/pos");
+    }
+
+    private void updateCartQuantity(HttpServletRequest request, HttpServletResponse response)
+            throws IOException {
+        String isbn = request.getParameter("isbn");
+        int newQuantity = Integer.parseInt(request.getParameter("quantity"));
+
+        HttpSession session = request.getSession();
+        List<CartItem> cart = (List<CartItem>) session.getAttribute("cart");
+
+        if (cart != null) {
+            if (newQuantity <= 0) {
+                // Remove item if quantity is 0 or negative
+                cart.removeIf(item -> item.getIsbn().equals(isbn));
                 session.setAttribute("cart", cart);
+                response.sendRedirect(request.getContextPath() + "/billing/pos");
+                return;
             }
 
-            String isbn = request.getParameter("isbn");
-            String quantityStr = request.getParameter("quantity");
-            int quantity = quantityStr != null ? Integer.parseInt(quantityStr) : 1;
-
+            // Validate against inventory before updating
             Optional<Book> bookOpt = bookService.findByIsbn(isbn);
             if (bookOpt.isPresent()) {
                 Book book = bookOpt.get();
 
-                // Check if item already in cart
-                boolean found = false;
-                for (CartItem item : cart) {
-                    if (item.getIsbn().equals(isbn)) {
-                        item.setQuantity(item.getQuantity() + quantity);
-                        found = true;
-                        break;
-                    }
+                if (newQuantity > book.getQuantity()) {
+                    String errorMsg = String.format("Cannot set quantity to %d. Only %d available in stock",
+                            newQuantity, book.getQuantity());
+                    response.sendRedirect(request.getContextPath() + "/billing/pos?error=insufficient-stock&message=" +
+                            java.net.URLEncoder.encode(errorMsg, "UTF-8"));
+                    return;
                 }
 
-                if (!found) {
-                    CartItem cartItem = new CartItem(isbn, book.getTitle(), book.getAuthor(),
-                            book.getPrice(), quantity);
-                    cart.add(cartItem);
+                // Update the cart item quantity
+                Optional<CartItem> itemOpt = cart.stream()
+                        .filter(item -> item.getIsbn().equals(isbn))
+                        .findFirst();
+
+                if (itemOpt.isPresent()) {
+                    itemOpt.get().setQuantity(newQuantity);
+                    session.setAttribute("cart", cart);
                 }
             }
-
-            response.sendRedirect(request.getContextPath() + "/billing");
-        } catch (Exception e) {
-            response.sendRedirect(request.getContextPath() + "/billing?error=" + e.getMessage());
         }
+
+        response.sendRedirect(request.getContextPath() + "/billing/pos");
     }
 
-    private void processCheckout(HttpServletRequest request, HttpServletResponse response)
+    private void checkout(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        try {
-            HttpSession session = request.getSession();
-            @SuppressWarnings("unchecked")
-            List<CartItem> cart = (List<CartItem>) session.getAttribute("cart");
-
-            if (cart == null || cart.isEmpty()) {
-                response.sendRedirect(request.getContextPath() + "/billing?error=empty-cart");
-                return;
-            }
-
-            String customerAccountNumber = request.getParameter("customerAccountNumber");
-            String paymentMethod = request.getParameter("paymentMethod");
-            String notes = request.getParameter("notes");
-
-            // Create bill
-            Bill bill = new Bill();
-            bill.setCustomerAccountNumber(customerAccountNumber);
-            bill.setUserId(1); // Get from session in real app
-            bill.setSubtotal(calculateCartTotal(cart));
-            bill.setTaxAmount(BigDecimal.ZERO);
-            bill.setTotalAmount(bill.getSubtotal());
-            bill.setPaymentMethod(paymentMethod != null ? paymentMethod : "CASH");
-            bill.setNotes(notes);
-
-            // Convert cart items to bill items
-            List<BillItem> billItems = new ArrayList<>();
-            for (CartItem cartItem : cart) {
-                BillItem billItem = new BillItem();
-                billItem.setIsbn(cartItem.getIsbn());
-                billItem.setBookTitle(cartItem.getTitle());
-                billItem.setQuantity(cartItem.getQuantity());
-                billItem.setUnitPrice(cartItem.getPrice());
-                billItem.setTotalPrice(cartItem.getTotal());
-                billItems.add(billItem);
-            }
-            bill.setBillItems(billItems);
-
-            // Save bill
-            Bill savedBill = billService.save(bill);
-
-            // Clear cart
-            session.removeAttribute("cart");
-
-            response.sendRedirect(request.getContextPath() + "/billing/receipt?billId=" + savedBill.getBillId());
-        } catch (Exception e) {
-            response.sendRedirect(request.getContextPath() + "/billing?error=" + e.getMessage());
-        }
-    }
-
-    private void startNewBill(HttpServletRequest request, HttpServletResponse response)
-            throws IOException {
         HttpSession session = request.getSession();
-        session.removeAttribute("cart");
-        response.sendRedirect(request.getContextPath() + "/billing");
-    }
-
-    private void removeItem(HttpServletRequest request, HttpServletResponse response)
-            throws IOException {
-        HttpSession session = request.getSession();
-        @SuppressWarnings("unchecked")
         List<CartItem> cart = (List<CartItem>) session.getAttribute("cart");
 
-        if (cart != null) {
-            String isbn = request.getParameter("isbn");
-            cart.removeIf(item -> item.getIsbn().equals(isbn));
+        if (cart == null || cart.isEmpty()) {
+            response.sendRedirect(request.getContextPath() + "/billing/pos?error=empty-cart");
+            return;
         }
 
-        response.sendRedirect(request.getContextPath() + "/billing");
+        // Get form parameters
+        String customerAccountNumber = request.getParameter("customerAccountNumber");
+        String paymentMethod = request.getParameter("paymentMethod");
+        String notes = request.getParameter("notes");
+
+        // Get discount parameters
+        String discountType = request.getParameter("discountType");
+        String discountValueStr = request.getParameter("discountValue");
+
+        // Calculate subtotal
+        BigDecimal subtotal = cart.stream()
+                .map(CartItem::getTotal)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        // Apply discount if provided
+        BigDecimal discountAmount = BigDecimal.ZERO;
+        if (discountType != null && !"none".equals(discountType) &&
+                discountValueStr != null && !discountValueStr.isEmpty()) {
+            BigDecimal discountValue = new BigDecimal(discountValueStr);
+            DiscountStrategy<Bill> strategy = createDiscountStrategy(discountType, discountValue);
+
+            // Create temporary bill for discount calculation
+            Bill tempBill = new BillBuilder().subtotal(subtotal).build();
+            discountAmount = strategy.calculateDiscount(tempBill);
+        }
+
+        BigDecimal taxAmount = subtotal.multiply(new BigDecimal("0.10")); // 10% tax
+        BigDecimal totalAmount = subtotal.add(taxAmount).subtract(discountAmount);
+
+        // Create bill using BillBuilder
+        Bill bill = new BillBuilder()
+                .customerAccountNumber(customerAccountNumber)
+                .userId(1)
+                .billDate(LocalDateTime.now())
+                .subtotal(subtotal)
+                .taxAmount(taxAmount)
+                .discountAmount(discountAmount)
+                .totalAmount(totalAmount)
+                .paymentMethod(paymentMethod)
+                .paymentStatus("PAID")
+                .notes(notes)
+                .build();
+
+        // Save bill with items
+        Bill savedBill = billService.saveBillWithItems(bill, cart);
+
+        // Update inventory quantities for purchased books
+        for (CartItem item : cart) {
+            try {
+                Optional<Book> bookOpt = bookService.findByIsbn(item.getIsbn());
+                if (bookOpt.isPresent()) {
+                    Book book = bookOpt.get();
+                    int newQuantity = book.getQuantity() - item.getQuantity();
+
+                    // Prevent negative quantities
+                    if (newQuantity < 0) {
+                        throw new RuntimeException("Insufficient inventory for book: " + book.getTitle());
+                    }
+
+                    book.setQuantity(newQuantity);
+                    bookService.save(book);
+                }
+            } catch (Exception e) {
+                // Log the specific error and continue or rollback
+                System.err.println("Error updating inventory for ISBN " + item.getIsbn() + ": " + e.getMessage());
+                // You might want to implement compensation logic here
+                throw new RuntimeException("Error updating inventory: " + e.getMessage());
+            }
+        }
+
+        // Clear cart
+        session.removeAttribute("cart");
+
+        // Redirect to receipt
+        response.sendRedirect(request.getContextPath() + "/billing/receipt?billId=" + savedBill.getBillId());
     }
 
     private void showReceipt(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        try {
-            String billIdParam = request.getParameter("billId");
-            if (billIdParam != null && !billIdParam.trim().isEmpty()) {
-                // Convert String to Integer
-                Integer billId = Integer.parseInt(billIdParam);
-                Optional<Bill> billOpt = billService.findById(billId);
-                if (billOpt.isPresent()) {
-                    request.setAttribute("bill", billOpt.get());
-                    request.getRequestDispatcher("/WEB-INF/views/billing/receipt.jsp").forward(request, response);
-                    return;
+        String billId = request.getParameter("billId");
+
+        Optional<BillDTO> billOpt = billService.findDTOById(billId);
+
+        if (billOpt.isPresent()) {
+            BillDTO bill = billOpt.get();
+
+            // Get customer details if available - with proper null checking
+            if (bill.getCustomerAccountNumber() != null && !bill.getCustomerAccountNumber().trim().isEmpty()) {
+                try {
+                    Optional<Customer> customerOpt = customerService.findByAccountNumber(bill.getCustomerAccountNumber());
+                    if (customerOpt.isPresent()) {
+                        request.setAttribute("customer", customerOpt.get());
+                    } else {
+                        request.setAttribute("customerNotFound", true);
+                    }
+                } catch (Exception e) {
+                    System.err.println("Error finding customer: " + e.getMessage());
+                    request.setAttribute("customerError", "Error loading customer details");
                 }
             }
+
+            request.setAttribute("bill", bill);
+            request.getRequestDispatcher("/WEB-INF/views/billing/receipt.jsp").forward(request, response);
+        } else {
             response.sendRedirect(request.getContextPath() + "/billing?error=receipt-not-found");
-        } catch (NumberFormatException e) {
-            // Handle invalid bill ID format
-            response.sendRedirect(request.getContextPath() + "/billing?error=invalid-bill-id");
-        } catch (Exception e) {
-            response.sendRedirect(request.getContextPath() + "/billing?error=" + e.getMessage());
         }
     }
 
-    private BigDecimal calculateCartTotal(List<CartItem> cart) {
-        return cart.stream()
-                .map(item -> item.getPrice().multiply(BigDecimal.valueOf(item.getQuantity())))
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
+    private void applyDiscount(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+        try {
+            String billId = request.getParameter("billId");
+            String discountType = request.getParameter("discountType");
+            BigDecimal discountValue = new BigDecimal(request.getParameter("discountValue"));
+
+            Bill updatedBill = billService.applyDiscount(billId, discountType, discountValue);
+
+            response.sendRedirect(request.getContextPath() + "/billing/receipt?billId=" +
+                    updatedBill.getBillId() + "&success=discount-applied");
+        } catch (Exception e) {
+            response.sendRedirect(request.getContextPath() + "/billing?error=discount-failed");
+        }
+    }
+
+    private DiscountStrategy<Bill> createDiscountStrategy(String discountType, BigDecimal discountValue) {
+        switch (discountType.toLowerCase()) {
+            case "percentage":
+                return new PercentageDiscountStrategy(discountValue.divide(new BigDecimal("100")));
+            case "fixed":
+                return new FixedDiscountStrategy(discountValue);
+            default:
+                return new NoDiscountStrategy();
+        }
     }
 }

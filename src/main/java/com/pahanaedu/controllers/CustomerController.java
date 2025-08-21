@@ -1,21 +1,24 @@
-// src/main/java/com/pahanaedu/controllers/CustomerController.java
 package com.pahanaedu.controllers;
 
+import com.pahanaedu.dto.CustomerDTO;
 import com.pahanaedu.entities.Customer;
 import com.pahanaedu.services.CustomerService;
 import com.pahanaedu.services.impl.CustomerServiceImpl;
+import com.pahanaedu.entities.Bill;
 
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
 import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
 
 @WebServlet(name = "CustomerController", urlPatterns = {
-        "/customers", "/customers/add", "/customers/edit", "/customers/delete", "/customers/search"
+        "/customers", "/customers/add", "/customers/edit", "/customers/delete",
+        "/customers/search", "/customers/bills", "/customers/quick"
 })
 public class CustomerController extends HttpServlet {
     private CustomerService customerService;
@@ -33,16 +36,26 @@ public class CustomerController extends HttpServlet {
 
         switch (action) {
             case "/customers/add":
+                checkStaffOrAdminAccess(request, response);
                 showAddForm(request, response);
                 break;
             case "/customers/edit":
+                checkAdminAccess(request, response);
                 showEditForm(request, response);
                 break;
             case "/customers/delete":
+                checkAdminAccess(request, response);
                 deleteCustomer(request, response);
                 break;
             case "/customers/search":
                 searchCustomers(request, response);
+                break;
+            case "/customers/bills":
+                showCustomerBills(request, response);
+                break;
+            case "/customers/quick":
+                checkStaffOrAdminAccess(request, response);
+                showQuickCustomerForm(request, response);
                 break;
             case "/customers":
             default:
@@ -58,10 +71,16 @@ public class CustomerController extends HttpServlet {
 
         switch (action) {
             case "/customers/add":
+                checkStaffOrAdminAccess(request, response);
                 addCustomer(request, response);
                 break;
             case "/customers/edit":
+                checkAdminAccess(request, response);
                 updateCustomer(request, response);
+                break;
+            case "/customers/quick":
+                checkStaffOrAdminAccess(request, response);
+                createQuickCustomer(request, response);
                 break;
             default:
                 listCustomers(request, response);
@@ -72,11 +91,38 @@ public class CustomerController extends HttpServlet {
     private void listCustomers(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         try {
-            List<Customer> customers = customerService.findAll();
+            List<CustomerDTO> customers = customerService.findAllDTOs();
             request.setAttribute("customers", customers);
+            request.setAttribute("isStaff", isStaffUser(request));
             request.getRequestDispatcher("/WEB-INF/views/customers/list.jsp").forward(request, response);
         } catch (Exception e) {
             request.setAttribute("errorMessage", "Error loading customers: " + e.getMessage());
+            request.getRequestDispatcher("/WEB-INF/views/error.jsp").forward(request, response);
+        }
+    }
+
+    private void showCustomerBills(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+        try {
+            String accountNumber = request.getParameter("accountNumber");
+            if (accountNumber == null || accountNumber.trim().isEmpty()) {
+                response.sendRedirect(request.getContextPath() + "/customers?error=invalid-account-number");
+                return;
+            }
+
+            Optional<Customer> customerOpt = customerService.findByAccountNumber(accountNumber);
+            if (!customerOpt.isPresent()) {
+                response.sendRedirect(request.getContextPath() + "/customers?error=customer-not-found");
+                return;
+            }
+
+            List<Bill> bills = customerService.findBillsByCustomer(accountNumber);
+
+            request.setAttribute("customer", customerOpt.get());
+            request.setAttribute("bills", bills);
+            request.getRequestDispatcher("/WEB-INF/views/customers/bills.jsp").forward(request, response);
+        } catch (Exception e) {
+            request.setAttribute("errorMessage", "Error loading customer bills: " + e.getMessage());
             request.getRequestDispatcher("/WEB-INF/views/error.jsp").forward(request, response);
         }
     }
@@ -86,14 +132,19 @@ public class CustomerController extends HttpServlet {
         request.getRequestDispatcher("/WEB-INF/views/customers/add.jsp").forward(request, response);
     }
 
+    private void showQuickCustomerForm(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+        request.getRequestDispatcher("/WEB-INF/views/customers/quick.jsp").forward(request, response);
+    }
+
     private void showEditForm(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         try {
             String accountNumber = request.getParameter("accountNumber");
-            Optional<Customer> customerOpt = customerService.findByAccountNumber(accountNumber);
+            CustomerDTO customer = customerService.findCustomerDTOByAccountNumber(accountNumber);
 
-            if (customerOpt.isPresent()) {
-                request.setAttribute("customer", customerOpt.get());
+            if (customer != null) {
+                request.setAttribute("customer", customer);
                 request.getRequestDispatcher("/WEB-INF/views/customers/edit.jsp").forward(request, response);
             } else {
                 response.sendRedirect(request.getContextPath() + "/customers?error=customer-not-found");
@@ -119,8 +170,8 @@ public class CustomerController extends HttpServlet {
     private void updateCustomer(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         try {
-            Customer customer = createCustomerFromRequest(request);
-            customerService.update(customer);
+            CustomerDTO customerDTO = createCustomerDTOFromRequest(request);
+            customerService.updateDTO(customerDTO);
             response.sendRedirect(request.getContextPath() + "/customers?message=customer-updated");
         } catch (Exception e) {
             request.setAttribute("errorMessage", "Error updating customer: " + e.getMessage());
@@ -132,10 +183,36 @@ public class CustomerController extends HttpServlet {
             throws IOException {
         try {
             String accountNumber = request.getParameter("accountNumber");
-            customerService.deleteByAccountNumber(accountNumber);
-            response.sendRedirect(request.getContextPath() + "/customers?message=customer-deleted");
+
+            if (accountNumber == null || accountNumber.trim().isEmpty()) {
+                response.sendRedirect(request.getContextPath() + "/customers?error=invalid-account-number");
+                return;
+            }
+
+            // Check if customer exists first
+            Optional<Customer> customerOpt = customerService.findByAccountNumber(accountNumber);
+            if (!customerOpt.isPresent()) {
+                response.sendRedirect(request.getContextPath() + "/customers?error=customer-not-found");
+                return;
+            }
+
+            // Remove the bill check since we're using soft delete
+            // List<Bill> customerBills = customerService.findBillsByCustomer(accountNumber);
+            // if (!customerBills.isEmpty()) {
+            //     response.sendRedirect(request.getContextPath() + "/customers?error=cannot-delete-customer-has-bills");
+            //     return;
+            // }
+
+            boolean deleted = customerService.deleteByAccountNumber(accountNumber);
+            if (deleted) {
+                response.sendRedirect(request.getContextPath() + "/customers?message=customer-deleted");
+            } else {
+                response.sendRedirect(request.getContextPath() + "/customers?error=delete-failed");
+            }
         } catch (Exception e) {
-            response.sendRedirect(request.getContextPath() + "/customers?error=" + e.getMessage());
+            System.err.println("Error deleting customer: " + e.getMessage());
+            e.printStackTrace();
+            response.sendRedirect(request.getContextPath() + "/customers?error=delete-error");
         }
     }
 
@@ -143,64 +220,136 @@ public class CustomerController extends HttpServlet {
             throws ServletException, IOException {
         try {
             String query = request.getParameter("q");
-            List<Customer> customers = customerService.searchByName(query);
+            if (query == null || query.trim().isEmpty()) {
+                listCustomers(request, response);
+                return;
+            }
 
+            List<CustomerDTO> customers = customerService.searchCustomerDTOsByName(query);
             request.setAttribute("customers", customers);
             request.setAttribute("searchQuery", query);
             request.getRequestDispatcher("/WEB-INF/views/customers/list.jsp").forward(request, response);
         } catch (Exception e) {
             request.setAttribute("errorMessage", "Error searching customers: " + e.getMessage());
-            listCustomers(request, response);
+            request.getRequestDispatcher("/WEB-INF/views/error.jsp").forward(request, response);
         }
     }
 
+    // Updated to use CustomerFactory through service
     private Customer createCustomerFromRequest(HttpServletRequest request) {
-        Customer customer = new Customer();
-        customer.setAccountNumber(request.getParameter("accountNumber"));
-        customer.setName(request.getParameter("name"));
-        customer.setEmail(request.getParameter("email"));
-
-        // Handle phone parameter
+        String accountNumber = request.getParameter("accountNumber");
+        String name = request.getParameter("name");
         String phone = request.getParameter("phone");
-        if (phone != null && !phone.trim().isEmpty()) {
-            customer.setContactNumber(phone); // Using setContactNumber instead of setPhone
-        }
+        String email = request.getParameter("email");
 
-        // Handle address parameter
+        // Build full address from separate components
+        StringBuilder fullAddress = new StringBuilder();
         String address = request.getParameter("address");
-        if (address != null && !address.trim().isEmpty()) {
-            customer.setAddress(address);
-        }
-
-        // Handle city parameter - using address field to store city info
         String city = request.getParameter("city");
         String postalCode = request.getParameter("postalCode");
 
-        // Combine address, city, and postal code into a single address field
-        StringBuilder fullAddress = new StringBuilder();
         if (address != null && !address.trim().isEmpty()) {
             fullAddress.append(address);
         }
         if (city != null && !city.trim().isEmpty()) {
-            if (fullAddress.length() > 0) {
-                fullAddress.append(", ");
-            }
+            if (fullAddress.length() > 0) fullAddress.append(", ");
             fullAddress.append(city);
         }
         if (postalCode != null && !postalCode.trim().isEmpty()) {
-            if (fullAddress.length() > 0) {
-                fullAddress.append(" ");
-            }
+            if (fullAddress.length() > 0) fullAddress.append(" ");
             fullAddress.append(postalCode);
         }
 
-        if (fullAddress.length() > 0) {
-            customer.setAddress(fullAddress.toString());
+        return customerService.createCustomerFromRequest(
+                accountNumber, name, fullAddress.toString(), phone, email
+        );
+    }
+
+    private CustomerDTO createCustomerDTOFromRequest(HttpServletRequest request) {
+        CustomerDTO customerDTO = new CustomerDTO();
+        customerDTO.setAccountNumber(request.getParameter("accountNumber"));
+        customerDTO.setName(request.getParameter("name"));
+        customerDTO.setTelephone(request.getParameter("phone"));
+        customerDTO.setAddress(request.getParameter("address"));
+        customerDTO.setEmail(request.getParameter("email"));
+        customerDTO.setPhoneNumber(request.getParameter("phone"));
+
+        String activeStr = request.getParameter("active");
+        if (activeStr != null) {
+            customerDTO.setActive(Boolean.parseBoolean(activeStr));
+        } else {
+            customerDTO.setActive(true);
         }
 
-        // Set default active status
-        customer.setActive(true);
-
-        return customer;
+        return customerDTO;
     }
+
+    private void createQuickCustomer(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+        try {
+            String customerType = request.getParameter("customerType");
+            Customer customer;
+
+            if ("premium".equals(customerType)) {
+                customer = customerService.createPremiumCustomer(
+                        request.getParameter("name"),
+                        request.getParameter("phone"),
+                        request.getParameter("email"),
+                        request.getParameter("address")
+                );
+            } else {
+                customer = customerService.createSampleCustomer(
+                        request.getParameter("name"),
+                        request.getParameter("phone"),
+                        request.getParameter("email")
+                );
+            }
+
+            customerService.save(customer);
+            response.sendRedirect(request.getContextPath() + "/customers?message=quick-customer-created");
+        } catch (Exception e) {
+            response.sendRedirect(request.getContextPath() + "/customers?error=" + e.getMessage());
+        }
+    }
+
+    private void checkAdminAccess(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+        HttpSession session = request.getSession(false);
+        if (session == null) {
+            response.sendRedirect(request.getContextPath() + "/login");
+            return;
+        }
+
+        String userRole = (String) session.getAttribute("userRole");
+        if (!"ADMIN".equals(userRole)) {
+            request.setAttribute("errorMessage", "Access denied. Admin privileges required.");
+            request.getRequestDispatcher("/WEB-INF/views/error.jsp").forward(request, response);
+            return;
+        }
+    }
+
+    private void checkStaffOrAdminAccess(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+        HttpSession session = request.getSession(false);
+        if (session == null) {
+            response.sendRedirect(request.getContextPath() + "/login");
+            return;
+        }
+
+        String userRole = (String) session.getAttribute("userRole");
+        if (!"ADMIN".equals(userRole) && !"STAFF".equals(userRole)) {
+            request.setAttribute("errorMessage", "Access denied. Staff or Admin privileges required.");
+            request.getRequestDispatcher("/WEB-INF/views/error.jsp").forward(request, response);
+            return;
+        }
+    }
+
+    private boolean isStaffUser(HttpServletRequest request) {
+        HttpSession session = request.getSession(false);
+        if (session == null) return false;
+
+        String userRole = (String) session.getAttribute("userRole");
+        return "STAFF".equals(userRole);
+    }
+
 }

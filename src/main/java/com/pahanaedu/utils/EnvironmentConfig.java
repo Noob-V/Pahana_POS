@@ -1,4 +1,3 @@
-// src/main/java/com/pahanaedu/utils/EnvironmentConfig.java
 package com.pahanaedu.utils;
 
 import java.io.IOException;

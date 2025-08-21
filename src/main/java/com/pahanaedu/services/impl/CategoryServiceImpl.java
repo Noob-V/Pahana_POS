@@ -1,4 +1,3 @@
-// src/main/java/com/pahanaedu/services/impl/CategoryServiceImpl.java
 package com.pahanaedu.services.impl;
 
 import com.pahanaedu.dao.CategoryDAO;
