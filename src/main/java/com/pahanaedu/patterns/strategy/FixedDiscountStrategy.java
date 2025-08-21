@@ -1,4 +1,3 @@
-// src/main/java/com/pahanaedu/patterns/strategy/FixedDiscountStrategy.java
 package com.pahanaedu.patterns.strategy;
 
 import com.pahanaedu.entities.Bill;

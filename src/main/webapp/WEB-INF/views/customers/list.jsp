@@ -160,8 +160,8 @@
                     <i class="fas fa-search text-muted"></i>
                   </span>
                   <input type="text" class="form-control border-start-0" name="q"
-                         placeholder="Search by customer name, account number, email..."
-                         value="${searchQuery}">
+                         placeholder="Search by account number, customer name, email, phone..."
+                         value="${searchQuery}" id="customerSearch">
                 </div>
               </div>
               <div class="col-md-4">
@@ -420,11 +420,86 @@
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-  // Initialize tooltips
-  var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
-  var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
-    return new bootstrap.Tooltip(tooltipTriggerEl)
-  })
+  // Real-time search functionality
+  document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('customerSearch');
+    const tableRows = document.querySelectorAll('tbody tr');
+    const totalCount = tableRows.length;
+    const resultsCounter = document.querySelector('.badge.bg-info');
+
+    function performSearch() {
+      const searchTerm = searchInput.value.toLowerCase().trim();
+      let visibleCount = 0;
+
+      tableRows.forEach(function(row) {
+        const accountNumber = row.querySelector('.account-number').textContent.toLowerCase();
+        const customerName = row.querySelector('.fw-medium').textContent.toLowerCase();
+        const emailCell = row.querySelector('td:nth-child(3)');
+        const email = emailCell.querySelector('a') ?
+                emailCell.querySelector('a').textContent.toLowerCase() : '';
+        const phoneCell = row.querySelector('td:nth-child(4)');
+        const phone = phoneCell.querySelector('a') ?
+                phoneCell.querySelector('a').textContent.toLowerCase() : '';
+
+        const matches = accountNumber.includes(searchTerm) ||
+                customerName.includes(searchTerm) ||
+                email.includes(searchTerm) ||
+                phone.includes(searchTerm);
+
+        if (matches) {
+          row.style.display = '';
+          visibleCount++;
+        } else {
+          row.style.display = 'none';
+        }
+      });
+
+      // Update results counter
+      resultsCounter.textContent = `${visibleCount} found`;
+
+      // Handle empty results
+      const tableContainer = document.querySelector('.table-responsive');
+      const emptyState = document.querySelector('.search-empty-state');
+
+      if (visibleCount === 0 && searchTerm !== '') {
+        if (tableContainer) tableContainer.style.display = 'none';
+        if (!emptyState) {
+          const searchEmptyDiv = document.createElement('div');
+          searchEmptyDiv.className = 'text-center text-muted empty-state search-empty-state';
+          searchEmptyDiv.innerHTML = `
+            <i class="fas fa-search fa-4x mb-3"></i>
+            <h4 class="mb-3">No Results Found</h4>
+            <p class="mb-4">No customers match your search: "<strong>${searchTerm}</strong>"</p>
+            <button class="btn btn-outline-primary" onclick="clearSearch()">
+              <i class="fas fa-times me-2"></i>Clear Search
+            </button>
+          `;
+          document.querySelector('.card-body.p-0').appendChild(searchEmptyDiv);
+        }
+      } else {
+        if (tableContainer) tableContainer.style.display = '';
+        if (emptyState) emptyState.remove();
+      }
+    }
+
+    // Clear search function
+    window.clearSearch = function() {
+      searchInput.value = '';
+      performSearch();
+      searchInput.focus();
+    };
+
+    // Search as user types
+    searchInput.addEventListener('input', performSearch);
+
+    // Focus search with Ctrl+F
+    document.addEventListener('keydown', function(e) {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
+        e.preventDefault();
+        searchInput.focus();
+      }
+    });
+  });
 </script>
 </body>
 </html>

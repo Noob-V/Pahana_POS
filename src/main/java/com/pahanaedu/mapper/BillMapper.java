@@ -31,12 +31,10 @@ public class BillMapper {
         dto.setPaymentStatus(entity.getPaymentStatus());
         dto.setNotes(entity.getNotes());
 
-        // Convert LocalDateTime to Date if billDate exists
         if (entity.getBillDate() != null) {
             dto.setBillDate(Date.from(entity.getBillDate().atZone(ZoneId.systemDefault()).toInstant()));
         }
 
-        // Map bill items if they exist
         if (entity.getBillItems() != null) {
             List<BillItemDTO> itemDTOs = entity.getBillItems().stream()
                     .map(BillItemMapper::toDTO)
@@ -64,14 +62,12 @@ public class BillMapper {
         entity.setPaymentStatus(dto.getPaymentStatus());
         entity.setNotes(dto.getNotes());
 
-        // Convert Date to LocalDateTime if billDate exists
         if (dto.getBillDate() != null) {
             entity.setBillDate(dto.getBillDate().toInstant()
                     .atZone(ZoneId.systemDefault())
                     .toLocalDateTime());
         }
 
-        // Map bill items if they exist
         if (dto.getBillItems() != null) {
             List<BillItem> items = dto.getBillItems().stream()
                     .map(BillItemMapper::toEntity)

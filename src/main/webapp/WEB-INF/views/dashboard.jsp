@@ -72,8 +72,9 @@
           <a class="nav-link" href="${pageContext.request.contextPath}/books">
             <i class="fas fa-book me-2"></i> Books Management
           </a>
-            <a class="nav-link" href="${pageContext.request.contextPath}/billing">
-                <i class="fas fa-receipt me-2"></i> Billing Management
+          <a class="nav-link" href="${pageContext.request.contextPath}/billing">
+            <i class="fas fa-receipt me-2"></i> Billing Management
+          </a>
           <a class="nav-link" href="${pageContext.request.contextPath}/customers">
             <i class="fas fa-users me-2"></i> Customer Management
           </a>
@@ -104,7 +105,7 @@
         <div class="d-flex justify-content-between align-items-center mb-4">
           <div>
             <h2>Admin Dashboard</h2>
-            <p class="text-muted mb-0">Welcome back! Here's what's happening with your store.</p>
+            <p class="text-muted mb-0">Welcome To Pahana Edu!!</p>
           </div>
           <div class="text-end">
             <span class="text-muted">Last updated: </span>
@@ -117,6 +118,13 @@
           <div class="alert alert-warning alert-dismissible fade show" role="alert">
             <i class="fas fa-exclamation-triangle me-2"></i>
               ${errorMessage}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+          </div>
+        </c:if>
+        <c:if test="${param.message == 'login-success'}">
+          <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="fas fa-check-circle me-2"></i>
+            Login successful! Welcome to Pahana Education Bookshop.
             <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
           </div>
         </c:if>

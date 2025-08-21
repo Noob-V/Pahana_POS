@@ -16,7 +16,6 @@ public class CustomerDTO {
     private LocalDateTime createdDate;
     private LocalDateTime updatedDate;
 
-    // Existing getters and setters...
     public String getAccountNumber() { return accountNumber; }
     public void setAccountNumber(String accountNumber) { this.accountNumber = accountNumber; }
 

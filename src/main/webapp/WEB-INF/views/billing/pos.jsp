@@ -498,7 +498,6 @@
               </c:otherwise>
             </c:choose>
           </div>
-
           <!-- Enhanced Cart Total -->
           <c:if test="${not empty sessionScope.cart}">
             <div class="border-top pt-3 mt-3">
@@ -550,6 +549,35 @@
                   <option value="DIGITAL">Digital Payment</option>
                 </select>
               </div>
+
+              <!-- Discount Section -->
+              <div class="mb-3">
+                <div class="card bg-light">
+                  <div class="card-body p-3">
+                    <h6 class="card-title mb-3">
+                      <i class="fas fa-percent me-1"></i> Apply Discount (Optional)
+                    </h6>
+                    <div class="row g-2">
+                      <div class="col-6">
+                        <select class="form-select form-select-sm" id="discountType" name="discountType">
+                          <option value="">No Discount</option>
+                          <option value="percentage">Percentage (%)</option>
+                          <option value="fixed">Fixed Amount ($)</option>
+                        </select>
+                      </div>
+                      <div class="col-6">
+                        <input type="number" class="form-control form-control-sm"
+                               id="discountValue" name="discountValue"
+                               placeholder="Amount" step="0.01" min="0" disabled>
+                      </div>
+                    </div>
+                    <div id="discountPreview" class="mt-2 text-muted small" style="display: none;">
+                      Discount: <span id="discountAmount">$0.00</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
 
               <div class="mb-4">
                 <label for="notes" class="form-label fw-semibold">
@@ -684,7 +712,6 @@
       }
     });
 
-    // Show no results message if needed
     const noResults = document.getElementById('no-results');
     if (noResults) noResults.remove();
 
@@ -706,7 +733,6 @@
     const alertDiv = document.createElement('div');
     alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
 
-    // Fix the icon selection logic
     let iconClass = 'info-circle';
     if (type === 'danger') {
       iconClass = 'exclamation-triangle';
@@ -739,7 +765,88 @@
         bsAlert.close();
       });
     }, 5000);
+
+    // Discount calculation functionality
+    initializeDiscountCalculation();
   });
+
+  function initializeDiscountCalculation() {
+    const discountType = document.getElementById('discountType');
+    const discountValue = document.getElementById('discountValue');
+    const discountPreview = document.getElementById('discountPreview');
+    const discountAmount = document.getElementById('discountAmount');
+
+    // Only run if elements exist and cart is not empty
+    if (!discountType || !discountValue || !discountPreview || !discountAmount) {
+      return;
+    }
+
+    // Get current subtotal safely
+    <c:if test="${not empty sessionScope.cart}">
+    const cartSubtotal = ${subtotal != null ? subtotal : 0};
+    </c:if>
+    <c:if test="${empty sessionScope.cart}">
+    const cartSubtotal = 0;
+    </c:if>
+
+    discountType.addEventListener('change', function() {
+      if (this.value === '') {
+        discountValue.disabled = true;
+        discountValue.value = '';
+        discountPreview.style.display = 'none';
+        updateTotalWithDiscount(0);
+      } else {
+        discountValue.disabled = false;
+        discountValue.focus();
+        calculateDiscount();
+      }
+    });
+
+    discountValue.addEventListener('input', calculateDiscount);
+
+    function calculateDiscount() {
+      const type = discountType.value;
+      const value = parseFloat(discountValue.value) || 0;
+      let discount = 0;
+
+      if (type === 'percentage' && value > 0) {
+        const percentage = value / 100;
+        discount = cartSubtotal * percentage;
+
+        if (value > 100) {
+          discountValue.value = '100';
+          discount = cartSubtotal;
+        }
+      } else if (type === 'fixed' && value > 0) {
+        discount = value;
+
+        if (value > cartSubtotal) {
+          discountValue.value = cartSubtotal.toFixed(2);
+          discount = cartSubtotal;
+        }
+      }
+
+      if (discount > 0) {
+        discountAmount.textContent = '$' + discount.toFixed(2);
+        discountPreview.style.display = 'block';
+        updateTotalWithDiscount(discount);
+      } else {
+        discountPreview.style.display = 'none';
+        updateTotalWithDiscount(0);
+      }
+    }
+
+    function updateTotalWithDiscount(discount) {
+      const discountedSubtotal = cartSubtotal - discount;
+      const tax = discountedSubtotal * 0.1;
+      const newTotal = discountedSubtotal + tax;
+
+      const totalElement = document.querySelector('.border-top .row:last-child .col-auto strong');
+      if (totalElement) {
+        totalElement.textContent = '$' + newTotal.toFixed(2);
+      }
+    }
+  }
 </script>
 </body>
 </html>

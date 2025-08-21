@@ -32,7 +32,6 @@ public class CartItemMapper {
         entity.setAuthor(dto.getAuthor());
         entity.setPrice(dto.getPrice());
         entity.setQuantity(dto.getQuantity());
-        // Note: total is calculated in the CartItem entity
 
         return entity;
     }

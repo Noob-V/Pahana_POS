@@ -7,7 +7,7 @@ public class BillEmailNotifier implements BillObserver {
 
     @Override
     public void onBillCreated(Bill bill) {
-        System.out.println("EMAIL NOTIFICATION SERVICE");
+        System.out.println("Pahana Edu Book Store - Sri Lanka");
         System.out.println("═══════════════════════════════");
         System.out.println("To: Customer " + bill.getCustomerAccountNumber());
         System.out.println("Subject: Bill Confirmation - " + bill.getBillId());
@@ -16,7 +16,7 @@ public class BillEmailNotifier implements BillObserver {
         System.out.println("Payment Status: " + bill.getPaymentStatus());
         System.out.println("Email notification queued for delivery");
         System.out.println();
-        System.out.println("Thank you for your business!");
+        System.out.println("Thank you for choosing Pahana Edu!");
         System.out.println("═══════════════════════════════");
     }
 }

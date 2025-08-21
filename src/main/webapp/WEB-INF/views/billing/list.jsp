@@ -73,6 +73,43 @@
                     <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                 </div>
             </c:if>
+            <!-- Search Section -->
+            <div class="card mb-4">
+                <div class="card-body">
+                    <div class="row g-3 align-items-center">
+                        <div class="col-md-4">
+                            <div class="input-group">
+                    <span class="input-group-text">
+                        <i class="fas fa-search"></i>
+                    </span>
+                                <input type="text" class="form-control" id="searchBills"
+                                       placeholder="Search by bill number, customer...">
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <select class="form-select" id="statusFilter">
+                                <option value="">All Status</option>
+                                <option value="PAID">Paid</option>
+                                <option value="PENDING">Pending</option>
+                                <option value="CANCELLED">Cancelled</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <select class="form-select" id="paymentFilter">
+                                <option value="">All Payment Methods</option>
+                                <option value="CASH">Cash</option>
+                                <option value="CARD">Credit/Debit Card</option>
+                                <option value="DIGITAL">Digital Payment</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <button type="button" class="btn btn-outline-secondary w-100" id="clearFilters">
+                                <i class="fas fa-times"></i> Clear
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
             <!-- Bills Table -->
             <div class="card">
@@ -215,5 +252,98 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const searchInput = document.getElementById('searchBills');
+        const statusFilter = document.getElementById('statusFilter');
+        const paymentFilter = document.getElementById('paymentFilter');
+        const clearButton = document.getElementById('clearFilters');
+        const tableRows = document.querySelectorAll('tbody tr');
+
+        // Search functionality
+        function filterBills() {
+            const searchTerm = searchInput.value.toLowerCase();
+            const selectedStatus = statusFilter.value.toLowerCase();
+            const selectedPayment = paymentFilter.value.toLowerCase();
+
+            let visibleCount = 0;
+
+            tableRows.forEach(function(row) {
+                const billNumber = row.querySelector('td:nth-child(1)').textContent.toLowerCase();
+                const customer = row.querySelector('td:nth-child(2)').textContent.toLowerCase();
+                const statusBadge = row.querySelector('td:nth-child(10) .badge');
+                const paymentBadge = row.querySelector('td:nth-child(9) .badge');
+
+                const status = statusBadge ? statusBadge.textContent.toLowerCase() : '';
+                const payment = paymentBadge ? paymentBadge.textContent.toLowerCase() : '';
+
+                const matchesSearch = billNumber.includes(searchTerm) ||
+                    customer.includes(searchTerm);
+                const matchesStatus = selectedStatus === '' || status === selectedStatus;
+                const matchesPayment = selectedPayment === '' || payment === selectedPayment;
+
+                if (matchesSearch && matchesStatus && matchesPayment) {
+                    row.style.display = '';
+                    visibleCount++;
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+
+            // Show/hide no results message
+            updateNoResultsMessage(visibleCount);
+        }
+
+        function updateNoResultsMessage(visibleCount) {
+            const existingMessage = document.getElementById('no-results-row');
+            if (existingMessage) {
+                existingMessage.remove();
+            }
+
+            if (visibleCount === 0 && tableRows.length > 0) {
+                const tbody = document.querySelector('tbody');
+                const noResultsRow = document.createElement('tr');
+                noResultsRow.id = 'no-results-row';
+                noResultsRow.innerHTML = `
+                <td colspan="11" class="text-center py-4">
+                    <i class="fas fa-search fa-2x text-muted mb-3"></i>
+                    <h6 class="text-muted">No bills found</h6>
+                    <p class="text-muted mb-0">Try adjusting your search criteria</p>
+                </td>
+            `;
+                tbody.appendChild(noResultsRow);
+            }
+        }
+
+        // Clear all filters
+        function clearAllFilters() {
+            searchInput.value = '';
+            statusFilter.value = '';
+            paymentFilter.value = '';
+
+            tableRows.forEach(function(row) {
+                row.style.display = '';
+            });
+
+            const existingMessage = document.getElementById('no-results-row');
+            if (existingMessage) {
+                existingMessage.remove();
+            }
+        }
+
+        // Event listeners
+        searchInput.addEventListener('input', filterBills);
+        statusFilter.addEventListener('change', filterBills);
+        paymentFilter.addEventListener('change', filterBills);
+        clearButton.addEventListener('click', clearAllFilters);
+
+        // Real-time search with debounce
+        let searchTimeout;
+        searchInput.addEventListener('input', function() {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(filterBills, 300);
+        });
+    });
+</script>
 </body>
 </html>

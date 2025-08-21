@@ -13,7 +13,7 @@ public class BookMapper {
         dto.setIsbn(entity.getIsbn());
         dto.setTitle(entity.getTitle());
         dto.setAuthor(entity.getAuthor());
-        dto.setDescription(entity.getDescription()); // Add this line
+        dto.setDescription(entity.getDescription());
         dto.setQuantity(entity.getQuantity());
         dto.setPrice(entity.getPrice());
         dto.setActive(entity.isActive());
@@ -36,9 +36,9 @@ public class BookMapper {
         entity.setAuthor(dto.getAuthor());
         entity.setQuantity(dto.getQuantity());
         entity.setPrice(dto.getPrice());
-        entity.setActive(dto.isActive());        // Map the active property
+        entity.setActive(dto.isActive());
 
-        // Default values for required fields not in DTO
+
         entity.setMinStockLevel(5);
 
         return entity;

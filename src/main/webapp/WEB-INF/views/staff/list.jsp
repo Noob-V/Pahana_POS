@@ -81,6 +81,40 @@
     </div>
   </div>
 
+  <!-- Search Section -->
+  <div class="row mb-3">
+    <div class="col-12">
+      <div class="card">
+        <div class="card-body py-3">
+          <div class="row align-items-center">
+            <div class="col-md-6">
+              <div class="input-group">
+              <span class="input-group-text bg-light">
+                <i class="fas fa-search text-muted"></i>
+              </span>
+                <input type="text"
+                       class="form-control"
+                       id="staffSearch"
+                       placeholder="Search by ID, username, name, or email..."
+                       autocomplete="off">
+                <button class="btn btn-outline-secondary" type="button" id="clearSearch">
+                  <i class="fas fa-times"></i>
+                </button>
+              </div>
+            </div>
+            <div class="col-md-6 mt-2 mt-md-0">
+              <div class="d-flex justify-content-md-end">
+                <small class="text-muted">
+                  <span id="searchResults">Showing all ${staffList.size()} staff members</span>
+                </small>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Alerts Section -->
   <div class="row mb-4">
     <div class="col-12">
@@ -281,6 +315,97 @@
   var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
     return new bootstrap.Tooltip(tooltipTriggerEl)
   })
+
+  // Search functionality
+  document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('staffSearch');
+    const clearButton = document.getElementById('clearSearch');
+    const tableRows = document.querySelectorAll('tbody tr');
+    const searchResults = document.getElementById('searchResults');
+    const totalCount = ${staffList.size()};
+
+    function performSearch() {
+      const searchTerm = searchInput.value.toLowerCase().trim();
+      let visibleCount = 0;
+
+      tableRows.forEach(function(row) {
+        const id = row.querySelector('td:nth-child(1) span').textContent.toLowerCase();
+        const username = row.querySelector('td:nth-child(2) code').textContent.toLowerCase();
+        const fullName = row.querySelector('td:nth-child(3) span').textContent.toLowerCase();
+        const emailCell = row.querySelector('td:nth-child(4)');
+        const email = emailCell.querySelector('a') ?
+                emailCell.querySelector('a').textContent.toLowerCase() : '';
+
+        const matches = id.includes(searchTerm) ||
+                username.includes(searchTerm) ||
+                fullName.includes(searchTerm) ||
+                email.includes(searchTerm);
+
+        if (matches) {
+          row.style.display = '';
+          visibleCount++;
+        } else {
+          row.style.display = 'none';
+        }
+      });
+
+      // Update search results text
+      if (searchTerm === '') {
+        searchResults.textContent = `Showing all ${totalCount} staff members`;
+      } else {
+        searchResults.textContent = `Found ${visibleCount} of ${totalCount} staff members`;
+      }
+
+      // Show/hide empty state
+      const emptyState = document.querySelector('.empty-state');
+      const tableContainer = document.querySelector('.table-responsive');
+
+      if (visibleCount === 0 && searchTerm !== '') {
+        if (tableContainer) {
+          tableContainer.style.display = 'none';
+        }
+        if (!document.querySelector('.search-empty-state')) {
+          const searchEmptyState = document.createElement('div');
+          searchEmptyState.className = 'text-center text-muted empty-state search-empty-state';
+          searchEmptyState.innerHTML = `
+        <i class="fas fa-search fa-4x mb-3"></i>
+        <h4 class="mb-3">No Results Found</h4>
+        <p class="mb-4">No staff members match your search criteria: "<strong>${searchTerm}</strong>"</p>
+        <button class="btn btn-outline-primary" onclick="document.getElementById('staffSearch').value=''; document.getElementById('staffSearch').dispatchEvent(new Event('input'));">
+          <i class="fas fa-times me-2"></i>Clear Search
+        </button>
+      `;
+          document.querySelector('.card-body').appendChild(searchEmptyState);
+        }
+      } else {
+        if (tableContainer) {
+          tableContainer.style.display = '';
+        }
+        const searchEmptyState = document.querySelector('.search-empty-state');
+        if (searchEmptyState) {
+          searchEmptyState.remove();
+        }
+      }
+    }
+
+    // Search input event
+    searchInput.addEventListener('input', performSearch);
+
+    // Clear search button
+    clearButton.addEventListener('click', function() {
+      searchInput.value = '';
+      performSearch();
+      searchInput.focus();
+    });
+
+    // Keyboard shortcut (Ctrl+F or Cmd+F)
+    document.addEventListener('keydown', function(e) {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
+        e.preventDefault();
+        searchInput.focus();
+      }
+    });
+  });
 </script>
 </body>
 </html>
